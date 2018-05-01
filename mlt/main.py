@@ -29,6 +29,7 @@ Usage:
   mlt deploy [--no-push] [-i | --interactive]
       [--retries=<retries>] [--skip-crd-check] [<kube_spec>]
   mlt undeploy
+  mlt status
   mlt (template | templates) list [--template-repo=<repo>]
 
 Options:
@@ -63,7 +64,7 @@ import mlt
 from docopt import docopt
 
 from mlt.commands import (BuildCommand, DeployCommand, InitCommand,
-                          TemplatesCommand, UndeployCommand)
+                          StatusCommand, TemplatesCommand, UndeployCommand)
 from mlt.utils import regex_checks
 
 # every available command and its corresponding action will go here
@@ -71,6 +72,7 @@ COMMAND_MAP = (
     ('build', BuildCommand),
     ('deploy', DeployCommand),
     ('init', InitCommand),
+    ('status', StatusCommand),
     ('template', TemplatesCommand),
     ('templates', TemplatesCommand),
     ('undeploy', UndeployCommand),
