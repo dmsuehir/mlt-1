@@ -25,3 +25,6 @@ main: main.py
 build:
 	docker pull pytorch/pytorch:v0.2
 	docker tag pytorch/pytorch:v0.2 ${CONTAINER_NAME}
+
+status:
+	@kubectl get pods --namespace ${NAMESPACE} -o wide -a -l job-name=${JOB_NAME}

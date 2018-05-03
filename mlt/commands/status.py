@@ -9,7 +9,7 @@
 #
 #    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
+# Unless required by applicable law or agreed to in writing, software`
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
@@ -19,9 +19,11 @@
 #
 
 import json
+import os
+import subprocess
 
 from mlt.commands import Command
-from mlt.utils import config_helpers, process_helpers
+from mlt.utils import config_helpers
 
 
 class StatusCommand(Command):
@@ -30,30 +32,13 @@ class StatusCommand(Command):
         self.config = config_helpers.load_config()
 
     def action(self):
-        pod_prefix = self._get_pod_name_prefix()
-        namespace = self.config['namespace']
-
-        output = process_helpers.run(["kubectl", "get", "pods", "--namespace",
-                                      namespace, "-o", "wide", "-a"])
-
-        output_lines = output.split("\n")
-        filtered_pods = [line for line in output_lines
-                         if line.startswith(pod_prefix)]
-
-        if len(filtered_pods) > 0:
-            # Print header row, followed by the pod list
-            print(output_lines[0])
-
-            for p in filtered_pods:
-                print(p)
-        else:
-            print("No pods found with the following filter: \n"
-                  "  Name prefix: {}\n  "
-                  "  Namespace:   {}".format(pod_prefix, namespace))
-
-    def _get_pod_name_prefix(self):
         with open('.push.json', 'r') as f:
             data = json.load(f)
 
-        app_run_id = data.get('app_run_id', "").split("-")
-        return "-".join([self.config["name"], app_run_id[0], app_run_id[1]])
+        app_run_id = data.get('app_run_id', "")
+        job_name = "-".join([self.config["name"], app_run_id])
+        namespace = self.config['namespace']
+
+        user_env = dict(os.environ, NAMESPACE=namespace, JOB_NAME=job_name)
+        print(subprocess.check_output(["make status"],
+                                      shell=True, env=user_env))
