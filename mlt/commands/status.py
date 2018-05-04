@@ -61,15 +61,15 @@ class StatusCommand(Command):
 
     @staticmethod
     def _default_status(namespace, app_name, app_run_id):
-        """ 
+        """
         Default status method, for when the app's Makefile doesn't have
         a status target defined.
         """
         run_id_list = app_run_id.split("-")
 
         if len(run_id_list) < 2:
-            ValueError("Unable to get job status because the run id {}"
-                       "is invalid".format(app_run_id))
+            raise ValueError("Unable to get job status because the run id {} "
+                             "is invalid".format(app_run_id))
 
         # Pod name prefix for filtering (we can't filter by pod label, since
         # the label name is different depending on job type)

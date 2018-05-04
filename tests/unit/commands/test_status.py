@@ -21,6 +21,7 @@
 from __future__ import print_function
 
 import pytest
+import uuid
 
 from mock import patch, MagicMock
 from subprocess import CalledProcessError
@@ -53,6 +54,11 @@ def subprocess_mock(patch):
     return patch('subprocess.check_output')
 
 
+@pytest.fixture
+def default_status_mock(patch):
+    return patch('StatusCommand._default_status')
+
+
 def status():
     status_cmd = StatusCommand({})
     status_cmd.config = {'name': 'app', 'namespace': 'namespace'}
@@ -61,6 +67,11 @@ def status():
         status_cmd.action()
         output = caught_output.getvalue()
     return output
+
+
+def call_default_status(namespace="my-namespace", app_name="my-app",
+                        run_id=str(uuid.uuid4())):
+    return StatusCommand._default_status(namespace, app_name, run_id)
 
 
 def test_uninitialized_status():
@@ -104,7 +115,6 @@ def test_successful_status(init_mock, open_mock, isfile_mock,
     assert expected_output in status_output
 
 
-@patch('mlt.commands.status.StatusCommand._default_status')
 def test_status_not_in_makefile(default_status_mock, init_mock, open_mock,
                                 isfile_mock, json_mock, subprocess_mock):
     """
@@ -117,7 +127,6 @@ def test_status_not_in_makefile(default_status_mock, init_mock, open_mock,
     subprocess_mock.side_effect = CalledProcessError(
         returncode=2, cmd="make status",
         output="No rule to make target `status'")
-
     status_output = status()
     assert expected_default_status in status_output
 
@@ -137,9 +146,32 @@ def test_status_makefile_error(init_mock, open_mock, isfile_mock, json_mock,
     assert error_msg in status_output
 
 
-def test_default_status_command():
+def test_default_status_command(subprocess_mock):
     """
-    Tests for the default status comamnd which is used when we don't find
+    Tests for the default status command which is used when we don't find
     the status target in the Makefile
     """
-    pass
+    expected_output = "List of pods:\nPod A ... \nPod B...\nPod C ..."
+    subprocess_mock.return_value.decode.return_value = expected_output
+    output = call_default_status()
+    assert expected_output in output
+
+
+def test_default_status_no_pods(subprocess_mock):
+    """
+    Tests the default status command where there are no pods for the last job.
+    """
+    expected_output = "no resources found"
+    subprocess_mock.return_value.decode.return_value = expected_output
+    output = call_default_status()
+    assert "no pods found for job" in output.lower()
+
+
+def test_default_status_invalid_run_id():
+    """
+    Tests sending a bad run id to the default status method
+    """
+    bad_run_id = "12345"
+    with pytest.raises(ValueError) as e:
+        call_default_status(run_id=bad_run_id)
+    assert "run id {} is invalid".format(bad_run_id) in str(e).lower()
