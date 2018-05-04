@@ -29,12 +29,13 @@ From here, it is a quick step to redeploy the Kubernetes objects, through `mlt d
 ## Build
 
 Prerequisites:
-- git
-- python
-- pip
-- tox
-- virtualenv
+- [Docker](https://docs.docker.com/install/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+- [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- [python](https://www.python.org/downloads/)
+- [pip](https://pip.pypa.io/en/stable/installing/)
 - [TFJob operator](https://github.com/kubeflow/tf-operator#installing-the-tfjob-crd-and-operator-on-your-k8s-cluster) (for the distributed tensorflow templates)
+
 
 ## Installation
 
@@ -73,8 +74,6 @@ mlt-0.1.0a1+12.gf49c412.dirty-py2.py3-none-any.whl
 [![asciicast](https://asciinema.org/a/171353.png)](https://asciinema.org/a/171353)
 
 ```bash
-# cd outside of the mlt tree
-$ cd ..
 $ mlt templates list
 Template        Description
 --------------  ----------------------------------------------------------------------------------------------

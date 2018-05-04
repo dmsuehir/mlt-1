@@ -1,5 +1,9 @@
 # Development
 
+In addition to the MLT prerequisites developer builds require the
+following:
+* [tox](http://tox.readthedocs.io/en/latest/install.html)
+
 To get set up, please run:
 
 `make dev-env`
