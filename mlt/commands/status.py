@@ -21,6 +21,7 @@
 import json
 import os
 import subprocess
+import sys
 
 from mlt.commands import Command
 from mlt.utils import config_helpers
@@ -32,13 +33,56 @@ class StatusCommand(Command):
         self.config = config_helpers.load_config()
 
     def action(self):
-        with open('.push.json', 'r') as f:
-            data = json.load(f)
+        push_file = '.push.json'
+        if os.path.isfile(push_file):
+            with open(push_file, 'r') as f:
+                data = json.load(f)
+        else:
+            print("This application has not been deployed yet.")
+            sys.exit(1)
 
         app_run_id = data.get('app_run_id', "")
         job_name = "-".join([self.config["name"], app_run_id])
         namespace = self.config['namespace']
-
         user_env = dict(os.environ, NAMESPACE=namespace, JOB_NAME=job_name)
-        print(subprocess.check_output(["make status"],
-                                      shell=True, env=user_env))
+
+        try:
+            output = subprocess.check_output(["make status"], shell=True,
+                                             env=user_env,
+                                             stderr=subprocess.STDOUT)
+            print(output.decode("utf-8").strip())
+        except subprocess.CalledProcessError as e:
+            if "No rule to make target `status'" in str(e.output):
+                # App doesn't have the status target in the Makefile
+                print(StatusCommand._default_status(
+                    namespace, self.config["name"], app_run_id))
+            else:
+                print("Error while getting app status: {}".format(e.output))
+
+    @staticmethod
+    def _default_status(namespace, app_name, app_run_id):
+        """ 
+        Default status method, for when the app's Makefile doesn't have
+        a status target defined.
+        """
+        run_id_list = app_run_id.split("-")
+
+        if len(run_id_list) < 2:
+            ValueError("Unable to get job status because the run id {}"
+                       "is invalid".format(app_run_id))
+
+        # Pod name prefix for filtering (we can't filter by pod label, since
+        # the label name is different depending on job type)
+        pod_name_prefix = "-".join([app_name, run_id_list[0], run_id_list[1]])
+
+        # Get pods list and display it
+        cmd = "kubectl get pods -a -o wide --namespace {} | " \
+              "awk 'NR==1 || /{}/'".format(namespace, pod_name_prefix)
+        output = subprocess.check_output([cmd], shell=True,
+                                         stderr=subprocess.STDOUT)
+        output = output.decode("utf-8").strip()
+
+        if output.count("\n") == 0:
+            output = "No pods found for job: {}".format(
+                "-".join([app_name, app_run_id]))
+        return output
