@@ -35,6 +35,12 @@ def load_config():
         sys.exit(1)
 
 
+def update_config(json_data):
+    """overwrites the existing MLT config with the specified data"""
+    with open(constants.MLT_CONFIG, "w") as f:
+        json.dump(json_data, f, indent=2)
+
+
 def get_template_parameters_from_file(file_path):
     """ Returns template parameters from the specified file """
     params = {}

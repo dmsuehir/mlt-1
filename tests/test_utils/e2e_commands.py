@@ -27,7 +27,7 @@ import json
 import os
 import time
 import uuid
-from subprocess import PIPE, Popen
+from subprocess import check_output, PIPE, Popen
 
 from mlt.utils.process_helpers import run, run_popen
 from project import basedir
@@ -81,6 +81,25 @@ class CommandTester(object):
         assert "On branch master" in run(
             "git --git-dir={}/.git --work-tree={} status".format(
                 self.project_dir, self.project_dir).split())
+
+    def config(self, subcommand="list", config_name=None, config_value=None):
+        command = ['mlt', 'config', subcommand]
+
+        if config_name:
+            command.append(config_name)
+
+        if config_value:
+            command.append(config_value)
+
+        p = Popen(command, cwd=self.project_dir, stdout=PIPE)
+        output, err = p.communicate()
+        assert p.wait() == 0
+
+        if subcommand == "list":
+            assert output
+
+        assert err is None
+        return output, err
 
     def build(self, watch=False):
         build_cmd = ['mlt', 'build']

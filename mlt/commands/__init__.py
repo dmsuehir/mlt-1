@@ -20,6 +20,7 @@
 
 from mlt.commands.base import Command  # noqa
 from mlt.commands.build import BuildCommand  # noqa
+from mlt.commands.config import ConfigCommand  # noqa
 from mlt.commands.deploy import DeployCommand  # noqa
 from mlt.commands.init import InitCommand  # noqa
 from mlt.commands.status import StatusCommand  # noqa

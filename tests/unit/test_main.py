@@ -62,7 +62,8 @@ def test_main_various_args(run_command, docopt, args):
 def test_main_invalid_names(docopt_mock):
     """ Test that an invalid name throws a ValueError """
     args = {
-        # underscore should not be allowed in name
+        # underscore should not be allowed in name for the init command
+        "init": True,
         "<name>": "foo_bar"
     }
     docopt_mock.return_value = args
