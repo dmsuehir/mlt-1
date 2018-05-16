@@ -28,34 +28,18 @@ from mlt.utils import config_helpers, constants
 class ConfigCommand(Command):
     def __init__(self, args):
         super(ConfigCommand, self).__init__(args)
-        self.list = args.get('list', False)
-        self.set = args.get('set', False)
-        self.unset = args.get('unset', False)
-        self.name = args.get('<name>', None)
-        self.value = args.get('<value>', None)
         self.config = config_helpers.load_config()
-
-        self.param_keys = self.name.split('.') if self.name else None
-
-        if (self.set or self.unset) and not self.name:
-            print("Name of the configuration parameter must be specified.")
-            sys.exit(1)
+        self.param_keys = args.get('<name>').split('.') \
+            if args.get('<name>') else []
 
     def action(self):
         # Call the specified sub-command
-        if self.list:
-            print("list")
+        if self.args.get('list'):
             self._list_configs()
-        elif self.set:
-            print("set")
-            self._set_config()
-        elif self.unset:
-            print("unset")
-            self._unset_config()
-        else:
-            print("Invalid config command.  Must have one of the following"
-                  "sub-command selected: list, set, unset.")
-            sys.exit(1)
+        elif self.args.get('set'):
+            self._set_config(self.param_keys, self.args.get('<value>'))
+        elif self.args.get('unset'):
+            self._unset_config(self.param_keys)
 
     def _list_configs(self):
         """
@@ -72,51 +56,62 @@ class ConfigCommand(Command):
             else:
                 config_list.append([config_name, self.config[config_name]])
 
-        if len(config_list) > 0:
-            print(tabulate(config_list, headers=['App Config', 'Value']))
+        if config_list:
+            print(tabulate(config_list, headers=['Parameter Name', 'Value']))
         else:
             print("No configuration parameters to display.")
 
-    def _set_config(self):
+    def _find_config(self, param_keys, add_if_not_found,
+                     key_not_found_error=""):
+        """
+        Finds the specified parameter in the config.  If add_if_not_found is
+        True, then the parameter is added if it does not exist.  Otherwise,
+        throws an error.
+        """
+        matched_config = self.config
+        for n in param_keys[:-1]:
+            if n in matched_config:
+                matched_config = matched_config[n]
+            else:
+                if add_if_not_found:
+                    matched_config[n] = {}
+                else:
+                    print(key_not_found_error)
+                    sys.exit(1)
+
+        return matched_config
+
+    def _set_config(self, param_keys, value):
         """
         Sets the config parameter to the specified value.  If the config
         parameter does not already exist in the MLT config, then it's added.
         Writes the new config back to the mlt config file.
         """
         # Find or add the specified config
-        matched_config = self.config
-        for n in self.param_keys[:-1]:
-            if n in matched_config:
-                matched_config = matched_config[n]
-            else:
-                matched_config[n] = {}
+        matched_config = self._find_config(param_keys, add_if_not_found=True)
 
         # Set the config value then write it back to the config file.
-        matched_config[self.param_keys[-1]] = self.value
+        matched_config[param_keys[-1]] = value
         config_helpers.update_config(self.config)
 
-    def _unset_config(self):
+    def _unset_config(self, param_keys):
         """
         Finds, then removes the specified config parameter from the MLT config
         file.  If the config parameter does not exist in the MLT config file,
         then an error is displayed.
         """
         matched_config = self.config
-        key_not_found = "Unable to find config '{}'.\nTo see " \
+        key_not_found = "Unable to find config '{}'. To see " \
                         "list of configs, use `mlt config list`.". \
-            format(self.name)
+            format(self.args.get('<name>'))
 
         # Find the specified config, and display an error if it does not exist.
-        for n in self.param_keys[:-1]:
-            if n in matched_config:
-                matched_config = matched_config[n]
-            else:
-                print(key_not_found)
-                sys.exit(1)
+        matched_config = self._find_config(param_keys, add_if_not_found=False,
+                                           key_not_found_error=key_not_found)
 
         # Delete the config parameter and then write it back to the config file
-        if self.param_keys[-1] in matched_config:
-            del matched_config[self.param_keys[-1]]
+        if param_keys[-1] in matched_config:
+            del matched_config[param_keys[-1]]
         else:
             print(key_not_found)
             sys.exit(1)

@@ -100,7 +100,7 @@ def sanitize_input(args, regex=None):
        It is recommended on docopt github to do validation
     """
     # docker requires repo name to be in lowercase
-    if args["<name>"] and args.get("init", None):
+    if args["<name>"] and args.get("init"):
         args["<name>"] = args["<name>"].lower()
 
         if not regex_checks.k8s_name_is_valid(args["<name>"], "pod"):
@@ -126,6 +126,11 @@ def sanitize_input(args, regex=None):
                          "https://kubernetes.io/docs/concepts/overview"
                          "/working-with-objects/names/#names".format(
                              args['--namespace']))
+
+    # Set and Unset config commands require the name arg
+    if (args.get('set') or args.get('unset')) and not args.get('<name>'):
+        raise ValueError("Name of the configuration parameter must be "
+                         "specified.")
 
     return args
 

@@ -62,37 +62,6 @@ def test_uninitialized_config_call():
         assert expected_error in output
 
 
-def test_invalid_subcommand(init_mock):
-    """
-    Tests calling the config command without a valid subcommand
-    """
-    init_mock.load_config.return_value = {}
-    with catch_stdout() as caught_output:
-        with pytest.raises(SystemExit):
-            cmd = ConfigCommand({"list": False, "set": False, "unset": False})
-            cmd.action()
-        output = caught_output.getvalue()
-        assert "Invalid config command" in output
-
-
-@pytest.mark.parametrize("set_param, unset_param, name_param", [
-    (True, False, None),
-    (True, False, ""),
-    (False, True, None),
-    (False, True, "")
-])
-def test_no_parameter(init_mock, set_param, unset_param, name_param):
-    """
-    Tests that both the set and unset commands require the name arg
-    """
-    expected_error = "Name of the configuration parameter must be specified"
-    with catch_stdout() as caught_output:
-        with pytest.raises(SystemExit):
-            config(set=set_param, unset=unset_param, name=name_param)
-        output = caught_output.getvalue()
-        assert expected_error in output
-
-
 def test_list_config(init_mock):
     """
     Test calling the config list command and checks the output.
