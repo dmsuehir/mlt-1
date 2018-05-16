@@ -64,7 +64,7 @@ def test_update_config():
 def test_add_remove_config():
     """
     Tests adding a new config, and then lists the configs to ensure that the
-    new config is listed.  Unsets the config and then lists the configs to 
+    new config is listed.  Remove the config and then lists the configs to 
     ensure that the config has been removed.
     """
     with create_work_dir() as workdir:
@@ -86,8 +86,8 @@ def test_add_remove_config():
         p = re.compile("{}[\s]+{}".format(new_config, new_value))
         assert p.search(str(updated_configs))
 
-        # unset the config and then ensure that the config has been removed.
-        commands.config(subcommand="unset", config_name=new_config)
+        # remove the config and then ensure that the config has been removed.
+        commands.config(subcommand="remove", config_name=new_config)
         updated_configs, _ = commands.config(subcommand="list")
         p = re.compile("{}[\s]+{}".format(new_config, new_value))
         assert not p.search(str(updated_configs))
