@@ -89,10 +89,10 @@ def test_main_invalid_namespace(docopt_mock):
 
 @pytest.mark.parametrize("command", [
     "set",
-    "unset"
+    "remove"
 ])
 @patch('mlt.main.docopt')
-def test_main_set_unset_name(docopt_mock, command):
+def test_main_set_remove_name(docopt_mock, command):
     """ Ensure that set and unset commands require name arg."""
     args = {
         command: True,

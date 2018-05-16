@@ -39,8 +39,8 @@ def update_config_mock(patch):
     return patch('config_helpers.update_config')
 
 
-def config(list=False, set=False, unset=False, name=None, value=None):
-    config_cmd = ConfigCommand({"list": list, "set": set, "unset": unset,
+def config(list=False, set=False, remove=False, name=None, value=None):
+    config_cmd = ConfigCommand({"list": list, "set": set, "remove": remove,
                                 "<name>": name, "<value>": value})
 
     with catch_stdout() as caught_output:
@@ -151,10 +151,10 @@ def test_set_existing_template_parameter(init_mock, update_config_mock):
     update_config_mock.assert_called_with(mlt_config)
 
 
-def test_set_unset_new_template_parameter(init_mock, update_config_mock):
+def test_set_remove_new_template_parameter(init_mock, update_config_mock):
     """
     Tests setting a new template parameter, ensures that the parameter is
-    added to the config file, then unsets the parameter.
+    added to the config file, then removes the parameter.
     """
     mlt_config = {
         "namespace": "foo",
@@ -176,14 +176,14 @@ def test_set_unset_new_template_parameter(init_mock, update_config_mock):
         new_value
     update_config_mock.assert_called_with(expected_parameter)
 
-    # Unset the parameter, and we should be back to the original
-    config(unset=True, name=new_parameter)
+    # Remove the parameter, and we should be back to the original
+    config(remove=True, name=new_parameter)
     update_config_mock.assert_called_with(mlt_config)
 
 
-def test_set_unset_new_parameter(init_mock, update_config_mock):
+def test_set_remove_new_parameter(init_mock, update_config_mock):
     """
-    Tests setting and unsetting a new parameter a few levels deep.
+    Tests setting and removing a new parameter a few levels deep.
     """
     mlt_config = {
         "namespace": "foo",
@@ -206,12 +206,12 @@ def test_set_unset_new_parameter(init_mock, update_config_mock):
     expected_config["foo1"]["foo2"]["foo3"] = new_value
     update_config_mock.assert_called_with(expected_config)
 
-    # Unset the parameter and check that we are back to the original config
-    config(unset=True, name=new_parameter)
+    # Remove the parameter and check that we are back to the original config
+    config(remove=True, name=new_parameter)
     update_config_mock.assert_called_with(mlt_config)
 
 
-def test_unset_config_param(init_mock, update_config_mock):
+def test_remove_config_param(init_mock, update_config_mock):
     """
     Tests removing an existing config
     """
@@ -224,8 +224,8 @@ def test_unset_config_param(init_mock, update_config_mock):
     }
     init_mock.return_value = mlt_config
 
-    # Unset the registry parameter and check the config update arg
-    config(unset=True, name="registry")
+    # Remove the registry parameter and check the config update arg
+    config(remove=True, name="registry")
     expected_config = {
         "namespace": "foo",
         constants.TEMPLATE_PARAMETERS: {
@@ -240,7 +240,7 @@ def test_unset_config_param(init_mock, update_config_mock):
     "{}.does-not-exist".format(constants.TEMPLATE_PARAMETERS),
     "subparam.does-not-exist"
 ])
-def test_unset_invalid_param(init_mock, param_name):
+def test_remove_invalid_param(init_mock, param_name):
     """
     Tests trying to remove a parameter that does not exist
     """
@@ -253,7 +253,7 @@ def test_unset_invalid_param(init_mock, param_name):
     }
     init_mock.return_value = mlt_config
 
-    # Unset the registry parameter and check the config update arg
+    # Remove the registry parameter and check the config update arg
     with pytest.raises(SystemExit):
-        output = config(unset=True, name=param_name)
+        output = config(remove=True, name=param_name)
         assert "Unable to find config" in output

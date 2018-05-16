@@ -38,8 +38,8 @@ class ConfigCommand(Command):
             self._list_configs()
         elif self.args.get('set'):
             self._set_config(self.param_keys, self.args.get('<value>'))
-        elif self.args.get('unset'):
-            self._unset_config(self.param_keys)
+        elif self.args.get('remove'):
+            self._remove_config(self.param_keys)
 
     def _list_configs(self):
         """
@@ -94,13 +94,12 @@ class ConfigCommand(Command):
         matched_config[param_keys[-1]] = value
         config_helpers.update_config(self.config)
 
-    def _unset_config(self, param_keys):
+    def _remove_config(self, param_keys):
         """
         Finds, then removes the specified config parameter from the MLT config
         file.  If the config parameter does not exist in the MLT config file,
         then an error is displayed.
         """
-        matched_config = self.config
         key_not_found = "Unable to find config '{}'. To see " \
                         "list of configs, use `mlt config list`.". \
             format(self.args.get('<name>'))

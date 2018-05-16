@@ -25,7 +25,7 @@ Usage:
   mlt init [--template=<template> --template-repo=<repo>]
       [--registry=<registry> --namespace=<namespace]
       [--skip-crd-check] <name>
-  mlt config (list | set <name> <value> | unset <name>)
+  mlt config (list | set <name> <value> | remove <name>)
   mlt build [--watch]
   mlt deploy [--no-push] [-i | --interactive]
       [--retries=<retries>] [--skip-crd-check] [<kube_spec>]
@@ -128,7 +128,7 @@ def sanitize_input(args, regex=None):
                              args['--namespace']))
 
     # Set and Unset config commands require the name arg
-    if (args.get('set') or args.get('unset')) and not args.get('<name>'):
+    if (args.get('set') or args.get('remove')) and not args.get('<name>'):
         raise ValueError("Name of the configuration parameter must be "
                          "specified.")
 
