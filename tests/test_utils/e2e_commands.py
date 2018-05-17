@@ -133,7 +133,7 @@ class CommandTester(object):
             # verify that we created a docker image
             assert run_popen(
                 "docker image inspect {}".format(build_data['last_container']),
-                shell=True
+                shell=True, stdout=None, stderr=None
             ).wait() == 0
 
     def deploy(self, no_push=False, interactive=False):
