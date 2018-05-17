@@ -145,6 +145,19 @@ $ kubectl get --namespace=my-app all
 Connecting to pod...
 root@test-9e035719-1d8b-4e0c-adcb-f706429ffeac-wl42v:/src/app# ls
 Dockerfile  Makefile  README.md  k8s  k8s-templates  main.py  mlt.json	requirements.txt
+
+# Displays events for the current job
+$ mlt events
+LAST SEEN   FIRST SEEN   COUNT     NAME                                                                            KIND      SUBOBJECT                     TYPE      REASON                  SOURCE                                                   MESSAGE
+
+6m          6m           1         my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33-sqzqg.152f8f13466696b4              Pod                                     Normal    Scheduled               default-scheduler                                        Successfully assigned my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33-sqzqg to gke-dls-us-n1-highmem-8-skylake-82af83b4-8nvh
+6m          6m           1         my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33-sqzqg.152f8f134ff373d7              Pod                                     Normal    SuccessfulMountVolume   kubelet, gke-dls-us-n1-highmem-8-skylake-82af83b4-8nvh   MountVolume.SetUp succeeded for volume "default-token-grq2c"
+6m          6m           1         my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33-sqzqg.152f8f1399b33ba0              Pod       spec.containers{my-app}       Normal    Pulled                  kubelet, gke-dls-us-n1-highmem-8-skylake-82af83b4-8nvh   Container image "gcr.io/my-project-12345/my-app:b9f124d2-ef34-4d66-b137-b8a6026bf782" already present on machine
+6m          6m           1         my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33-sqzqg.152f8f139dec0dc3              Pod       spec.containers{my-app}       Normal    Created                 kubelet, gke-dls-us-n1-highmem-8-skylake-82af83b4-8nvh   Created container
+6m          6m           1         my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33-sqzqg.152f8f13a2ea0ff6              Pod       spec.containers{my-app}       Normal    Started                 kubelet, gke-dls-us-n1-highmem-8-skylake-82af83b4-8nvh   Started container
+6m          6m           1         my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33.152f8f13461279e4                    Job                                     Normal    SuccessfulCreate        job-controller                                           Created pod: my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33-sqzqg
+
+
 ```
 
 ### Examples
