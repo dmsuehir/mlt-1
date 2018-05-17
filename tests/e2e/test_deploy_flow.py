@@ -27,6 +27,7 @@ from test_utils.files import create_work_dir
 # NOTE: you need to deploy first before you deploy with --no-push
 # otherwise you have no image to use to make new container from
 
+
 @pytest.mark.parametrize('template',
                          filter(lambda x: os.path.isdir(
                              os.path.join('mlt-templates', x)),
