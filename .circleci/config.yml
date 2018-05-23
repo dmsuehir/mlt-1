@@ -6,11 +6,6 @@ jobs:
     environment:
       KUBECONFIG: /home/circleci/.kube/config
       MLT_TEST_CLUSTER_ENV_FILE: /tmp/mlt_test_cluster
-    # gets around pyenv with circleci: https://discuss.circleci.com/t/testing-in-different-environments/450/12
-    dependencies:
-      override:
-      - pip install tox tox-pyenv
-      - pyenv local 2.7.12 3.5.2
     working_directory: ~/repo
     steps:
       - checkout
