@@ -22,6 +22,7 @@ import os
 import shutil
 import tempfile
 from contextlib import contextmanager
+from distutils.dir_util import copy_tree
 
 from mlt.utils import process_helpers
 
@@ -32,6 +33,12 @@ def clone_repo(repo):
     process_helpers.run_popen(
         "git clone {} {}".format(repo, destination),
         shell=True, stdout=False, stderr=False).wait()
+
+    # If the template repo is a local path, then copy the local directory over
+    # the git clone so that the templates reflect the local changes.
+    if not is_git_repo(repo):
+        copy_tree(repo, destination)
+
     try:
         yield destination
     finally:
@@ -39,3 +46,9 @@ def clone_repo(repo):
         # https://bugs.python.org/issue29699
         if os.path.exists(destination):
             shutil.rmtree(destination)
+
+
+def is_git_repo(template_repo):
+    """ Returns True if the template_repo looks like a git repository. """
+    return template_repo.startswith("git@") or \
+        template_repo.startswith("https://")

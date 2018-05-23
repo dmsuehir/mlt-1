@@ -47,6 +47,11 @@ def copytree_mock(patch):
 
 
 @pytest.fixture
+def copy_tree_mock(patch):
+    return patch('git_helpers.copy_tree')
+
+
+@pytest.fixture
 def process_helpers(patch):
     return patch('process_helpers')
 
@@ -85,7 +90,7 @@ def test_init_dir_exists():
 
 
 def test_init(open_mock, process_helpers, copytree_mock, check_output_mock,
-              config_helpers_mock):
+              config_helpers_mock, copy_tree_mock):
     check_output_mock.return_value.decode.return_value = 'bar'
     new_dir = str(uuid.uuid4())
 
@@ -104,7 +109,8 @@ def test_init(open_mock, process_helpers, copytree_mock, check_output_mock,
     assert init.app_name == new_dir
 
 
-def test_init_crd_check(checking_crds_mock, process_helpers, check_output_mock):
+def test_init_crd_check(checking_crds_mock, process_helpers, check_output_mock,
+                        copy_tree_mock):
     new_dir = str(uuid.uuid4())
     init_dict = {
         'init': True,

@@ -34,8 +34,7 @@ class TemplatesCommand(Command):
             templates_directory = os.path.join(temp_clone, TEMPLATES_DIR)
             templates = self._parse_templates(templates_directory)
             if not templates:
-                if template_repo.startswith("git@") or \
-                   template_repo.startswith("https://"):
+                if git_helpers.is_git_repo(template_repo):
                     print("Please verify git is installed and setup "
                           "properly and you have read access to the repo.")
                 else:

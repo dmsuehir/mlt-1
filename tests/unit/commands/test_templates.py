@@ -27,12 +27,17 @@ from test_utils import project
 from test_utils.io import catch_stdout
 
 
+@pytest.fixture
+def copy_tree_mock(patch):
+    return patch('git_helpers.copy_tree')
+
+
 @pytest.mark.parametrize("valid_template_dir", [
     project.basedir(),
     "git@github.com:IntelAI/mlt.git",
     "https://github.com/IntelAI/mlt",
 ])
-def test_template_list(valid_template_dir):
+def test_template_list(valid_template_dir, copy_tree_mock):
     args = {
         'template': 'test',
         'list': True,
@@ -48,7 +53,7 @@ def test_template_list(valid_template_dir):
     "git@github.com:1ntelA1/mlt.git",
     "https://github.com/1ntelA1/mlt",
 ])
-def test_template_list_invalid_repo_dir(invalid_template_dir):
+def test_template_list_invalid_repo_dir(invalid_template_dir, copy_tree_mock):
     invalid_template_dir = "/tmp/invalid-mlt-dir"
     args = {
         'template': 'test',
