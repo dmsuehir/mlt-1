@@ -27,10 +27,14 @@ from test_utils.e2e_commands import CommandTester
 from test_utils.files import create_work_dir
 
 
+def call_template_list(template_repo):
+    return check_output(['mlt', 'templates', 'list',
+                         '--template-repo={}'.format(template_repo)]
+                        ).decode("utf-8")
+
+
 def test_templates():
-    output = check_output(['mlt', 'templates', 'list',
-                           '--template-repo={}'.format(project.basedir())]
-                          ).decode("utf-8")
+    output = call_template_list(project.basedir())
     desired_template_output = """Template             Description
 -------------------  --------------------------------------------------------------------------------------------------
 hello-world          A TensorFlow python HelloWorld example run through Kubernetes Jobs.
@@ -60,9 +64,7 @@ def test_local_templates():
             f.write("New local template for testing")
 
         # call mlt template list and then check the output
-        output = check_output(['mlt', 'templates', 'list',
-                               '--template-repo={}'.format(temp_clone)]
-                              ).decode("utf-8")
+        output = call_template_list(temp_clone)
 
         # template list should include our new test-local template
         desired_template_output = """Template             Description
