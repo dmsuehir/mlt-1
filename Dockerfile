@@ -49,35 +49,6 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.9.0/bi
 RUN chmod +x ./kubectl
 RUN mv ./kubectl /usr/local/bin/kubectl
 
-# install ksonnet + kubeflow so we can support TFJob
-
-COPY ./resources/config.yaml /root/.kube/config
-
-ENV NAMESPACE kubeflow
-ENV VERSION 3920d1402f40455c0f3e5f54ea4cc8142c23c2c8
-ENV APP_NAME kubeflow
-ENV KUBECONFIG /root/.kube/config
-# workaround for https://github.com/ksonnet/ksonnet/issues/298
-ENV USER root
-
-# pull ksonnet from web
-RUN curl -LO https://github.com/ksonnet/ksonnet/releases/download/v0.9.2/ks_0.9.2_linux_amd64.tar.gz
-RUN tar -xvf ks_0.9.2_linux_amd64.tar.gz
-RUN mv ./ks_0.9.2_linux_amd64/ks /usr/local/bin/ks
-
-# create basic ks app
-RUN ks init $APP_NAME
-WORKDIR $APP_NAME
-RUN ks env set default --namespace $NAMESPACE
-
-# install kubeflow components for TFJob support
-RUN ks registry add kubeflow github.com/kubeflow/kubeflow/tree/$VERSION/kubeflow
-RUN ks pkg install kubeflow/core@$VERSION
-RUN ks pkg install kubeflow/tf-job@$VERSION
-RUN ks pkg install kubeflow/pytorch-job@$VERSION
-RUN ks generate kubeflow-core kubeflow-core
-RUN ks generate pytorch-operator pytorch-operator
-
 ADD . /usr/share/mlt
 
 WORKDIR /usr/share/mlt

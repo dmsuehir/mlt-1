@@ -2,9 +2,15 @@ version: 2
 jobs:
   build:
     docker:
-      - image: ubuntu:16.04
-      - image: registry:2
-        name: registry
+      - image: circleci/python:2.7-stretch
+    environment:
+      KUBECONFIG: /home/circleci/.kube/config
+      MLT_TEST_CLUSTER_ENV_FILE: /tmp/mlt_test_cluster
+    # gets around pyenv with circleci: https://discuss.circleci.com/t/testing-in-different-environments/450/12
+    dependencies:
+      override:
+      - pip install tox tox-pyenv
+      - pyenv local 2.7.12 3.5.2
     working_directory: ~/repo
     steps:
       - checkout
@@ -12,9 +18,8 @@ jobs:
       - run:
           name: Installing test/lint dependencies
           command: |
-            # get python3 for tox
-            apt-get update
-            apt-get install -yq --no-install-recommends --fix-missing \
+            sudo apt-get update
+            sudo apt-get install -yq --no-install-recommends --fix-missing \
                 curl \
                 git \
                 make \
@@ -28,7 +33,7 @@ jobs:
                 python3-setuptools \
                 python3-wheel \
                 tar
-            python3 -m pip install tox
+            sudo pip install tox
 
       - run:
           name: lint tests
@@ -50,9 +55,9 @@ jobs:
             if [[ $? != 0 ]]; then
                 exit 1
             fi
-            pip install --no-cache-dir pip==9.0.1
+            sudo pip install -U pip
             PIP=/usr/local/bin/pip
-            $PIP install -I dist/${MLT_DIST_WHEEL}
+            sudo $PIP install -I dist/${MLT_DIST_WHEEL}
             PIP_DEPS=$(${PIP} freeze)
             if [[ $PIP_DEPS != *"mlt=="*"${SHORT_HASH}"* ]]; then
                 exit 1
@@ -64,21 +69,53 @@ jobs:
             fi
             deactivate
 
-      - run:
-          name: Installing docker dependencies
-          command: |
-            set -x
-            VER="17.03.0-ce"
-            curl -L -o /tmp/docker-$VER.tgz https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz
-            tar -xz -C /tmp -f /tmp/docker-$VER.tgz
-            mv /tmp/docker/* /usr/bin
-            curl -L https://github.com/docker/compose/releases/download/1.16.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
-            chmod +x /usr/local/bin/docker-compose
-
       - setup_remote_docker:
           docker_layer_caching: true
+          version: 17.06.0-ce
+
+      - run:
+          name: Install gcloud
+          command: |
+            GCLOUD_SDK_VERSION="197.0.0"
+            curl -sSLo google-cloud-sdk.tar.gz https://storage.googleapis.com/cloud-sdk-release/google-cloud-sdk-${GCLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
+            && tar zxf google-cloud-sdk.tar.gz \
+            && rm google-cloud-sdk.tar.gz \
+            && ./google-cloud-sdk/install.sh --usage-reporting=true --path-update=true
+            ./google-cloud-sdk/bin/gcloud components install beta --quiet
+            sudo apt-get install -y apt-transport-https
+            curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+            sudo sh -c 'echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list'
+            sudo apt-get update
+            sudo apt-get install -y kubectl
+
+      - run:
+          name: Create test cluster
+          command: |
+            export MLT_TEST_CLUSTER="mlt-test-cluster$CIRCLE_BUILD_NUM"
+            echo $GKE_CREDENTIALS | base64 -di > mltkey.json
+            ./google-cloud-sdk/bin/gcloud auth activate-service-account mltjson@intelai-mlt.iam.gserviceaccount.com --key-file=mltkey.json
+            ./google-cloud-sdk/bin/gcloud --project intelai-mlt beta container clusters create "$MLT_TEST_CLUSTER" \
+            --zone "us-west1-b" --cluster-version "1.9.6-gke.1" --num-nodes "5" --machine-type "n1-highmem-4"
+            sudo apt-get install -y kubectl
+            ./google-cloud-sdk/bin/gcloud --project intelai-mlt beta container clusters get-credentials "$MLT_TEST_CLUSTER" \
+            --zone "us-west1-b"
+
+      - run:
+          name: Install kubeflow for TFJob operator
+          command: |
+            # since running on a cluster with RBAC enabled, need workaround
+            # https://github.com/kubeflow/kubeflow/blob/master/user_guide.md#rbac-clusters
+            kubectl create clusterrolebinding default-admin --clusterrole=cluster-admin --user=mltjson@intelai-mlt.iam.gserviceaccount.com
+            ./scripts/kubeflow_install.sh
 
       - run:
           name: Run e2e tests
           command: |
             make test-e2e
+      
+      - run:
+          name: cleanup cluster
+          when: always
+          command: |
+            export MLT_TEST_CLUSTER="mlt-test-cluster$CIRCLE_BUILD_NUM"
+            ./google-cloud-sdk/bin/gcloud beta container clusters delete "$MLT_TEST_CLUSTER" --zone "us-west1-b" --project "intelai-mlt" --quiet

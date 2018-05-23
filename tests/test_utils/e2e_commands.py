@@ -39,7 +39,9 @@ class CommandTester(object):
         self.workdir = workdir
         self.registry = os.getenv('MLT_REGISTRY', 'localhost:5000')
         self.registry_catalog_call = self._fetch_registry_catalog_call()
-        self.app_name = str(uuid.uuid4())[:10]
+        # putting an `a` here because PytorchJob requires a letter in front
+        # it tries to create a service based on image name
+        self.app_name = 'a' + str(uuid.uuid4())[:8]
         self.namespace = getpass.getuser() + '-' + self.app_name
 
         self.project_dir = os.path.join(self.workdir, self.app_name)
@@ -47,6 +49,11 @@ class CommandTester(object):
         self.build_json = os.path.join(self.project_dir, '.build.json')
         self.deploy_json = os.path.join(self.project_dir, '.push.json')
         self.train_file = os.path.join(self.project_dir, 'main.py')
+
+        # ANY NEW TFJOBS NEED TO HAVE THEIR TEMPLATE NAMES LISTED HERE
+        # TFJob terminates pods after completion so can't check old pods
+        # for status of job completion
+        self.tfjob_templates = ('tf-dist-mnist', 'tf-distributed')
 
     def _fetch_registry_catalog_call(self):
         """returns either a local registry curl call or one for gcr"""
@@ -57,8 +64,27 @@ class CommandTester(object):
             catalog_call = 'curl -v -u _token:{} '.format(
                 gcr_token) + '"https://gcr.io/v2/_catalog"'
         else:
-            catalog_call = 'curl --noproxy \"*\"  registry:5000/v2/_catalog'
+            catalog_call = 'curl --noproxy \"*\" registry:5000/v2/_catalog'
         return catalog_call
+
+    def _grab_latest_pod_or_tfjob(self):
+        """grabs latest pod by startTime"""
+        if self.template in self.tfjob_templates:
+            # NOTE: do we need some sort of time filter here too?
+            obj_string = "kubectl get tfjob -a --namespace {} -o json".format(
+                self.namespace)
+        else:
+            obj_string = "kubectl get pods -a --namespace {}".format(
+                self.namespace) + " --sort-by=.status.startTime -o json"
+        objs = run_popen(obj_string, shell=True).stdout.read().decode('utf-8')
+        if objs:
+            objs = json.loads(objs).get('items')[-1]['status']
+            # tfjob is special and puts the `Succeeded` status on the `state`
+            # rather than the `phase` like everything else
+            return objs["state"] if "tfjob" in obj_string else objs["phase"]
+        else:
+            raise ValueError("No pod(s) deployed to namespace {}".format(
+                self.namespace))
 
     def init(self, template='hello-world', template_repo=basedir()):
         p = Popen(
@@ -67,6 +93,10 @@ class CommandTester(object):
              '--namespace={}'.format(self.namespace),
              '--template={}'.format(template), self.app_name],
             cwd=self.workdir)
+        # keep track of template we created so we can check if it's a TFJob
+        # that terminates pods after completion so we need to check the crd
+        # for status on if job was successful
+        self.template = template
         assert p.wait() == 0
         assert os.path.isfile(self.mlt_json)
         with open(self.mlt_json) as f:
@@ -158,11 +188,8 @@ class CommandTester(object):
                 "{} | jq .repositories | jq 'contains([\"{}\"])'".format(
                     self.registry_catalog_call, self.app_name),
                 shell=True).stdout.read().decode("utf-8")
-        # verify that our job did indeed get deployed to k8s
-        # TODO: fix this check: https://github.com/IntelAI/mlt/issues/105
-        assert run_popen(
-            "kubectl get jobs --namespace={}".format(self.namespace),
-            shell=True).wait() == 0
+
+        self._verify_pod_success(interactive)
 
     def status(self):
         status_cmd = ['mlt', 'status']
@@ -181,3 +208,41 @@ class CommandTester(object):
         assert run_popen(
             "kubectl get jobs --namespace={}".format(
                 self.namespace), shell=True).wait() == 0
+
+    def _verify_pod_success(self, interactive_deploy):
+        """verify that our latest job did indeed get deployed to k8s"""
+        # TODO: probably refactor this function
+        # allow for 60 seconds for the pod to start creating;
+        # pytorch operator causes pods to fail for a bit before success
+        # which is out of our hands
+        start = time.time()
+        pod_status = None
+        while pod_status is None:
+            try:
+                pod_status = self._grab_latest_pod_or_tfjob()
+            except (ValueError, IndexError):
+                # if no pod is available, or pods is an empty dict, ignore
+                # for 1 min
+                time.sleep(1)
+                if time.time() - start >= 60:
+                    break
+
+        # wait for pod to finish, up to 3 min for pending and 5 for running
+        # not counting interactive that will always be running
+        start = time.time()
+        while pod_status == 'Pending':
+            time.sleep(1)
+            pod_status = self._grab_latest_pod_or_tfjob()
+            if time.time() - start >= 180:
+                break
+
+        # interactive pods are `sleep; infinity` so will still be running
+        if not interactive_deploy:
+            while pod_status == 'Running':
+                time.sleep(1)
+                pod_status = self._grab_latest_pod_or_tfjob()
+                if time.time() - start >= 480:
+                    break
+            assert pod_status == 'Succeeded'
+        else:
+            assert pod_status == 'Running'

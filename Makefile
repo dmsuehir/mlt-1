@@ -65,24 +65,31 @@ docker:
 env-up: docker
 	docker-compose up -d
 
-end-down:
+env-down:
 	docker-compose down
 
-# kubeflow is needed for the TFJob operator (our TF templates use this)
+env-reset: env-down env-up
+
+
+# kubeflow is needed for the TFJob and PytorchJob operators (our templates use this)
+# we get the mltkey.json from the circleci setup
+# we then need to alias our gcloud setup to just `gcloud` for mlt
 test-e2e: env-up
-	docker-compose exec test ./resources/wait-port.sh kubernetes 8080
-	docker-compose exec test kubectl cluster-info
-	docker-compose exec test pip install -U pip
 	docker-compose exec test pip install tox
-	docker-compose exec test sh -c "cd /kubeflow && ks apply default -c kubeflow-core"
-	docker-compose exec test sh -c "cd /kubeflow && ks apply default -c pytorch-operator"
-	docker-compose exec test tox -e py2-e2e -e py3-e2e
+	docker cp /home/circleci/.kube/config mlt:/root/.gcloudkube/config
+	docker-compose exec test sed -i "s/cmd-path: \/home\/circleci\/repo\/google-cloud-sdk/cmd-path: \/usr\/share\/mlt\/google-cloud-sdk/" /root/.gcloudkube/config
+	docker-compose exec test bash -c "docker login -u _json_key --password-stdin https://gcr.io < mltkey.json"
+	docker-compose exec test bash -c "./google-cloud-sdk/bin/gcloud auth activate-service-account mltjson@intelai-mlt.iam.gserviceaccount.com --key-file=mltkey.json"
+	docker-compose exec test bash -c "ln -s /usr/share/mlt/google-cloud-sdk/bin/gcloud /usr/local/bin/gcloud"
+	docker-compose exec test env MLT_REGISTRY=gcr.io/intelai-mlt tox -e py2-e2e -e py3-e2e
 
 # EXTRA_ARGS enables usage of other docker registries for testing
 # ex: EXTRA_ARGS=`$MLT_REGISTRY_AUTH_COMMAND` make test-e2e-no-docker
 # if you'd like to use something other than localhost:5000, also set
 # MLT_REGISTRY env var and that'll be respected by tox
 test-e2e-no-docker:
+	@[ `kubectl get crd | grep -E 'tfjobs\.kubeflow\.org|pytorchjobs\.kubeflow\.org' -c` -eq "2" ] || \
+		GITHUB_TOKEN=${GITHUB_TOKEN} ./scripts/kubeflow_install.sh
 	@${EXTRA_ARGS:} tox -e py2-e2e -e py3-e2e
 
 clean:

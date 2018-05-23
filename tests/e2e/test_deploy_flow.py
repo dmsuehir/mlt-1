@@ -27,6 +27,9 @@ from test_utils.files import create_work_dir
 # NOTE: you need to deploy first before you deploy with --no-push
 # otherwise you have no image to use to make new container from
 
+# NOTE: adding try:finally to clean up if something takes too long to deploy
+# to free up resources before the test finishes
+# probably should handle that as a decorator perhaps?
 
 @pytest.mark.parametrize('template',
                          filter(lambda x: os.path.isdir(
@@ -37,10 +40,12 @@ def test_deploying_templates(template):
         commands = CommandTester(workdir)
         commands.init(template)
         commands.build()
-        commands.deploy()
-        commands.status()
-        commands.undeploy()
-        commands.status()
+        try:
+            commands.deploy()
+            commands.status()
+        finally:
+            commands.undeploy()
+            commands.status()
 
 
 def test_no_push_deploy():
@@ -48,12 +53,27 @@ def test_no_push_deploy():
         commands = CommandTester(workdir)
         commands.init()
         commands.build()
-        commands.deploy()
-        commands.status()
-        commands.deploy(no_push=True)
-        commands.status()
-        commands.undeploy()
-        commands.status()
+        try:
+            commands.deploy()
+            commands.status()
+            commands.deploy(no_push=True)
+            commands.status()
+        finally:
+            commands.undeploy()
+            commands.status()
+
+
+def test_interactive_deploy():
+    with create_work_dir() as workdir:
+        commands = CommandTester(workdir)
+        commands.init()
+        commands.build()
+        try:
+            commands.deploy(interactive=True)
+            commands.status()
+        finally:
+            commands.undeploy()
+            commands.status()
 
 
 def test_watch_build_and_deploy_no_push():
@@ -61,9 +81,11 @@ def test_watch_build_and_deploy_no_push():
         commands = CommandTester(workdir)
         commands.init()
         commands.build(watch=True)
-        commands.deploy()
-        commands.status()
-        commands.deploy(no_push=True)
-        commands.status()
-        commands.undeploy()
-        commands.status()
+        try:
+            commands.deploy()
+            commands.status()
+            commands.deploy(no_push=True)
+            commands.status()
+        finally:
+            commands.undeploy()
+            commands.status()
