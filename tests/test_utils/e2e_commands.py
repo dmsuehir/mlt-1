@@ -33,7 +33,7 @@ import uuid
 from termcolor import colored
 from subprocess import PIPE
 
-from mlt.utils.files import get_deployed_jobs
+from mlt.utils.files import get_deployed_jobs, get_truncated_job_name
 from mlt.utils.git_helpers import clone_repo, get_experiments_version
 from mlt.utils.process_helpers import run, run_popen
 from project import basedir
@@ -344,6 +344,25 @@ class CommandTester(object):
 
         # kill the 'mlt logs' process
         p.send_signal(signal.SIGINT)
+
+    def events(self, use_job_name=False):
+        """We will check for if there's a message with `Created pod: ...`
+           in the events, and that it was successful
+        """
+        command = ['mlt', 'events']
+        if use_job_name:
+            command.append("--job-name={}".format(self._grab_job_name()))
+
+        output, _ = self._launch_popen_call(
+            command, return_output=True, stderr_is_not_okay=True)
+
+        job_name = get_truncated_job_name(self._grab_job_name())
+        # horovod doesn't have pod creation in events because of custom deploy
+        if 'ahoro' not in self.app_name:
+            assert "Created pod: {}".format(job_name) in output
+            assert "SuccessfulCreate" in output
+        else:
+            assert job_name in output
 
     def undeploy(self, all_jobs=False, use_job_name=None):
         command = ['mlt', 'undeploy']

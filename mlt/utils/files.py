@@ -70,13 +70,15 @@ def get_deployed_jobs(job_names_only=False, work_dir=None):
     return jobs
 
 
-def _get_truncated_job_name(job_name):
+def get_truncated_job_name(job_name):
     """When we need to truncate the job name (which is the MLT app name plus
        the app run id) in order to get the prefix for pod names.
 
         Pod names have max len of 253 so shorten all jobs returned by
         truncating after the last `-` of the app run id and then shortening.
         We do a fuzzy search anyhow so shortening to max 200 chars is plenty.
+
+        We also use this in e2e_commands to verify pod deployed in mlt events
     """
     return job_name[:job_name.rfind("-")][-53:]
 
@@ -102,14 +104,14 @@ def get_only_one_job(job_desired, error_msg):
     elif job_desired:
         # --job-name was passed in to us
         if job_desired in jobs:
-            return _get_truncated_job_name(job_desired)
+            return get_truncated_job_name(job_desired)
         else:
             error_handling.throw_error(
                 "Job {} not found.\nJobs to choose from are:\n{}".format(
                     job_desired, '\n'.join(jobs)))
     elif jobs:
         # no --job-name flag passed and only 1 job exists
-        return _get_truncated_job_name(jobs[0])
+        return get_truncated_job_name(jobs[0])
     else:
         error_handling.throw_error("No jobs are deployed.")
 

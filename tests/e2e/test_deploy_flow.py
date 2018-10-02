@@ -72,6 +72,7 @@ class TestDeployFlow(CommandTester):
 
         self.verify_pod_status(expected_status=expected_status)
         self.status()
+        self.events()
 
     def test_deploy_using_old_app(self):
         """ Test to ensure build/deploy/status of an old MLT v0.2.1 app
@@ -116,6 +117,7 @@ class TestDeployFlow(CommandTester):
         self.verify_pod_status()
         self.status()
         self.logs(use_job_name=True)
+        self.events(use_job_name=True)
         self.deploy(no_push=True)
         self.verify_pod_status()
         self.status(count=2)
