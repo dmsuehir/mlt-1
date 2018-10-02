@@ -3,11 +3,16 @@
 - Focus on the user's problem; save solutions for proposal(s).
 -->
 
+## MLT version
+
+## mlt.json/any env vars set
+
+## Template used
+
+## Traceback if possible
+
+## Steps to reproduce
+
 ## Add an importance label!
 
-## Anything else we need to know?
-
-<!-- Background, figures, solution hints, etc. -->
-* TBD
-
-## Meta
+## OS version
