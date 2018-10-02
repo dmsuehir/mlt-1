@@ -256,42 +256,8 @@ class CommandTester(object):
             deploy_cmd.append('--verbose')
             call_args['return_output'] = True
         if logs:
-            # make log command string so we can shell it out due to ">"
-            log_file = '/tmp/logFile{}'.format(self.app_name)
-            deploy_cmd = " ".join(deploy_cmd) + \
-                         ' --logs > {}'.format(log_file)
-            # we want to kill all procs generated from our group
-            # includes subprocs of subprocs (mlt deploy --> kubetail)
-            p = self._launch_popen_call(
-                deploy_cmd, wait=True, shell=True, stdout=True,
-                stderr=True, preexec_fn=os.setpgrp)
-
-            # try for 10 min to check if log file has been written to yet
-            for check in range(600):
-                # don't delete the log file after test runs in case dev needs
-                # to debug why test fails
-                try:
-                    output = ''
-                    with open(log_file, "r") as f:
-                        output = f.read()
-                    """verify log output as `mlt deploy --logs` chains
-                       subprocess calls and we don't track pid so we can't
-                       access sub-subproc log output via piping output to
-                       other proc
-                    """
-                    assert "Will tail" in output
-                    assert self.app_name in output
-                    break
-                except (AssertionError, IOError):
-                    # ignore if file doesn't exist yet (model not deployed yet)
-                    # also ignore if file created but not written to yet
-                    pass
-                time.sleep(1)
-            else:
-                raise ValueError("No log output found.")
-
-            # kill `mlt deploy`'s `kubetail` call (subprocess of subprocess)
-            os.killpg(os.getpgid(p.pid), signal.SIGINT)
+            deploy_cmd = " ".join(deploy_cmd) + ' --logs'
+            self._log_helper(deploy_cmd)
             return
         else:
             # verbose displays regular docker output instead of progressar
@@ -334,16 +300,54 @@ class CommandTester(object):
             assert output == ''
         return output
 
+    def _log_helper(self, command):
+        """Wrapper around logs functionality used in both:
+           mlt deploy -l
+           mlt logs
+           command needs to be a string because of writing output to a file
+        """
+        # make log command string so we can shell it out due to ">"
+        log_file = '/tmp/logFile{}'.format(self.app_name)
+        mlt_command = command + ' > {}'.format(log_file)
+        # we want to kill all procs generated from our group
+        # includes subprocs of subprocs (mlt deploy --> kubetail)
+        p = self._launch_popen_call(
+            mlt_command, wait=True, shell=True, stdout=True,
+            stderr=True, preexec_fn=os.setpgrp)
+
+        # try for 10 min to check if log file has been written to yet
+        for check in range(600):
+            # don't delete the log file after test runs in case dev needs
+            # to debug why test fails
+            try:
+                output = ''
+                with open(log_file, "r") as f:
+                    output = f.read()
+                """verify log output as `mlt deploy --logs` chains
+                   subprocess calls and we don't track pid so we can't
+                   access sub-subproc log output via piping output to
+                   other proc
+                """
+                assert "Will tail" in output
+                assert self.app_name in output
+                break
+            except (AssertionError, IOError):
+                # ignore if file doesn't exist yet (model not deployed yet)
+                # also ignore if file created but not written to yet
+                pass
+            time.sleep(1)
+        else:
+            raise ValueError("No log output found.")
+
+        # kill `mlt deploy`'s `kubetail` call (subprocess of subprocess)
+        os.killpg(os.getpgid(p.pid), signal.SIGINT)
+
     def logs(self, use_job_name=False):
-        command = ['mlt', 'logs']
+        command = "mlt logs"
         if use_job_name:
-            command.append("--job-name={}".format(self._grab_job_name()))
+            command += " --job-name={}".format(self._grab_job_name())
 
-        # If 'mlt logs' succeed next call won't error out
-        p = self._launch_popen_call(command, wait=True)
-
-        # kill the 'mlt logs' process
-        p.send_signal(signal.SIGINT)
+        self._log_helper(command)
 
     def events(self, use_job_name=False):
         """We will check for if there's a message with `Created pod: ...`
