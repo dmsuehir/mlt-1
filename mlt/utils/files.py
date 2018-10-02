@@ -20,8 +20,9 @@
 import glob
 import json
 import os
-import sys
 import yaml
+
+from mlt.utils import error_handling
 
 # to support python2 as well
 try:
@@ -96,23 +97,21 @@ def get_only_one_job(job_desired, error_msg):
     jobs = get_deployed_jobs(job_names_only=True)
     # too many jobs exist with no --job-name flag
     if len(jobs) > 1 and not job_desired:
-        print(error_msg)
-        print('Jobs to choose from are:\n{}'.format('\n'.join(jobs)))
-        sys.exit(1)
+        error_handling.throw_error('{}\nJobs to choose from are:\n{}'.format(
+            error_msg, '\n'.join(jobs)))
     elif job_desired:
         # --job-name was passed in to us
         if job_desired in jobs:
             return _get_truncated_job_name(job_desired)
         else:
-            print("Job {} not found.".format(job_desired))
-            print('Jobs to choose from are:\n{}'.format('\n'.join(jobs)))
-            sys.exit(1)
+            error_handling.throw_error(
+                "Job {} not found.\nJobs to choose from are:\n{}".format(
+                    job_desired, '\n'.join(jobs)))
     elif jobs:
         # no --job-name flag passed and only 1 job exists
         return _get_truncated_job_name(jobs[0])
     else:
-        print("No jobs are deployed.")
-        sys.exit(1)
+        error_handling.throw_error("No jobs are deployed.")
 
 
 def get_job_kinds():

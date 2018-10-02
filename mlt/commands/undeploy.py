@@ -20,13 +20,11 @@
 
 import os
 import subprocess
-import sys
 import shutil
 
-from termcolor import colored
-
 from mlt.commands import Command
-from mlt.utils import config_helpers, process_helpers, files, sync_helpers
+from mlt.utils import (config_helpers, error_handling, files, process_helpers,
+                       sync_helpers)
 
 
 class UndeployCommand(Command):
@@ -38,32 +36,30 @@ class UndeployCommand(Command):
         """deletes current kubernetes namespace"""
 
         if sync_helpers.get_sync_spec() is not None:
-            print(colored("This app is currently being synced, please run "
-                          "`mlt sync delete` to unsync first", 'red'))
-            sys.exit(1)
+            error_handling.throw_error(
+                "This app is currently being synced, please run "
+                "`mlt sync delete` to unsync first", "red")
 
         namespace = self.config['namespace']
         jobs = files.get_deployed_jobs(job_names_only=True)
         if not jobs:
-            print("This app has not been deployed yet.")
-            sys.exit(1)
+            error_handling.throw_error("This app has not been deployed yet.")
         else:
             if self.args.get('--job-name'):
                 job_name = self.args['--job-name']
                 if job_name in jobs:
                     self._undeploy_jobs(namespace, job_name)
                 else:
-                    print('Job name {} not found in: {}'
-                          .format(job_name, jobs))
-                    sys.exit(1)
+                    error_handling.throw_error(
+                        'Job name {} not found in: {}'.format(job_name, jobs))
             elif self.args.get('--all') or len(jobs) == 1:
                 self._undeploy_jobs(namespace, jobs, all_jobs=True)
             else:
-                print("Multiple jobs are found under this application, "
-                      "please try `mlt undeploy --all` or specify a single "
-                      "job to undeploy using "
-                      "`mlt undeploy --job-name <job-name>`")
-                sys.exit(1)
+                error_handling.throw_error(
+                    "Multiple jobs are found under this application, "
+                    "please try `mlt undeploy --all` or specify a single "
+                    "job to undeploy using "
+                    "`mlt undeploy --job-name <job-name>`")
 
     def _undeploy_jobs(self, namespace, jobs, all_jobs=False):
         """undeploy the jobs passed to us
@@ -80,9 +76,19 @@ class UndeployCommand(Command):
         # `make undeploy` on each job
         recursive_delete = False if files.is_custom('undeploy:') else True
         if recursive_delete:
+            folder_to_delete = 'k8s'
+            if not all_jobs:
+                # only way all_jobs won't be false is if there's
+                # a --job-name flag passed or there's only 1 job to undeploy
+                if len(jobs) != 1:
+                    error_handling.throw_error(
+                        "There should be only 1 job to undeploy, "
+                        "something went wrong. Please file a bug on "
+                        "https://github.com/IntelAI/mlt")
+                folder_to_delete = os.path.join(folder_to_delete, jobs[0])
             process_helpers.run(
                 ["kubectl", "--namespace", namespace, "delete", "-f",
-                 "k8s", "--recursive"],
+                 folder_to_delete, "--recursive"],
                 raise_on_failure=True)
             # TODO: have this not be in a loop
             for job in jobs:

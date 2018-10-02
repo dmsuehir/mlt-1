@@ -19,12 +19,12 @@
 #
 import os
 import subprocess
-import sys
 from datetime import datetime
 from pytz import timezone
 
 from mlt.commands import Command
-from mlt.utils import config_helpers, files, process_helpers, sync_helpers
+from mlt.utils import (config_helpers, error_handling, files, process_helpers,
+                       sync_helpers)
 
 
 class StatusCommand(Command):
@@ -34,8 +34,7 @@ class StatusCommand(Command):
 
     def action(self):
         if not os.path.isfile('.push.json'):
-            print("This app has not been deployed yet")
-            sys.exit(1)
+            error_handling.throw_error("This app has not been deployed yet")
 
         namespace = self.config['namespace']
         jobs = files.get_deployed_jobs()
@@ -83,11 +82,12 @@ class StatusCommand(Command):
                 # TODO: when we have a template updating capability, add a
                 # note recommending that he user update's their template to
                 # get the status command
-                print("This app does not support the `mlt status` command. "
-                      "No `status` target was found in the Makefile.")
+                error_msg = "This app does not support the `mlt status` " + \
+                    "command. No `status` target was found in the Makefile."
             else:
-                print("Error while getting app status: {}".format(e.output))
-            sys.exit(1)
+                error_msg = "Error while getting app status: {}".format(
+                    e.output)
+            error_handling.throw_error(error_msg)
 
     def _custom_status(self, job, namespace, job_type):
         """runs `make status` on any special deployment

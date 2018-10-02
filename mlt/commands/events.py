@@ -21,7 +21,7 @@
 import sys
 
 from mlt.commands import Command
-from mlt.utils import config_helpers, files, process_helpers
+from mlt.utils import config_helpers, error_handling, files, process_helpers
 
 
 class EventsCommand(Command):
@@ -70,9 +70,9 @@ class EventsCommand(Command):
                 print("No events to display for this job")
         except Exception as ex:
             if 'command not found' in str(ex):
-                print("Please install `{}`. "
-                      "It is a prerequisite for `mlt events` "
-                      "to work".format(str(ex).split()[1]))
+                error_msg = "Please install `{}`. " + \
+                    "It is a prerequisite for `mlt events` " + \
+                    "to work".format(str(ex).split()[1])
             else:
-                print("Exception: {}".format(ex))
-            sys.exit(1)
+                error_msg = "Exception: {}".format(ex)
+            error_handling.throw_error(error_msg)

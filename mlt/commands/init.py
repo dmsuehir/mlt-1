@@ -22,7 +22,6 @@ import getpass
 import json
 import fnmatch
 import os
-import sys
 import traceback
 import yaml
 from copy import deepcopy
@@ -31,7 +30,7 @@ from subprocess import check_output
 from termcolor import colored
 
 from mlt.commands import Command
-from mlt.utils import (config_helpers, constants, git_helpers,
+from mlt.utils import (config_helpers, constants, error_handling, git_helpers,
                        kubernetes_helpers, localhost_helpers, process_helpers)
 
 
@@ -82,12 +81,11 @@ class InitCommand(Command):
                             with open(ksync_ignore_file, 'a+') as f:
                                 f.write("\n.git/**")
                         else:
-                            print(colored("This app doesn't support syncing",
-                                          'yellow'))
+                            error_handling.throw_error(
+                                "This app doesn't support syncing", 'yellow')
                     else:
-                        print(colored("ksync is not installed on localhost.",
-                                      'red'))
-                        sys.exit(1)
+                        error_handling.throw_error(
+                            "ksync is not installed on localhost.", 'red')
 
                 data = self._build_mlt_json(template_params, template_git_sha)
 
@@ -104,12 +102,14 @@ class InitCommand(Command):
                 self._init_git_repo()
             except OSError as exc:
                 if exc.errno == 17:
-                    print(colored("Directory '{}' already exists: delete "
-                                  "before trying to initialize new "
-                                  "application".format(self.app_name), 'red'))
+                    error_msg = "Directory '{}' already exists: ".format(
+                        self.app_name) + \
+                        "delete before trying to initialize new application"
+                    color = 'red'
                 else:
-                    traceback.print_exc()
-                sys.exit(1)
+                    error_msg = traceback.format_exc()
+                    color = None
+                error_handling.throw_error(error_msg, color)
 
     def _recursive_update_container_yaml(self, yaml_dict):
         if "containers" in yaml_dict:
@@ -176,9 +176,9 @@ class InitCommand(Command):
                     [i for i, x in enumerate(orig_filedata) if
                      "### END KSYNC SECTION" in x]
                 if len(begin_comment_indices) != len(end_comment_indices):
-                    print(colored("KSYNC comment section in file {} is "
-                                  "malformed".format(filename), 'red'))
-                    sys.exit(1)
+                    error_handling.throw_error(
+                        "KSYNC comment section in file {} is "
+                        "malformed".format(filename), 'red')
 
                 final_filedata = deepcopy(orig_filedata)
                 # using matched begin and end pairs for KSYNC comments, create

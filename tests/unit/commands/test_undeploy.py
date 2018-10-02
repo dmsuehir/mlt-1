@@ -26,11 +26,6 @@ from test_utils.io import catch_stdout
 
 
 @pytest.fixture
-def colored_mock(patch):
-    return patch('colored', MagicMock(side_effect=lambda x, _: x))
-
-
-@pytest.fixture
 def os_path_exists_mock(patch):
     return patch('os.path.exists')
 
@@ -38,6 +33,12 @@ def os_path_exists_mock(patch):
 @pytest.fixture
 def is_custom_mock(patch):
     return patch('files.is_custom')
+
+
+@pytest.fixture
+def error_handling_mock(patch):
+    return patch('error_handling.colored', MagicMock(
+        side_effect=lambda x, _: x))
 
 
 @pytest.fixture
@@ -212,7 +213,7 @@ def test_undeploy_by_bad_job_name(
         assert"Job name job2 not found" in output.getvalue()
 
 
-def test_undeploy_synced(colored_mock, get_sync_spec_mock):
+def test_undeploy_synced(error_handling_mock, get_sync_spec_mock):
     """undeploying a synced job, we need to delete the sync first"""
     get_sync_spec_mock.return_value = 'hello-world'
     command = {'undeploy': True}

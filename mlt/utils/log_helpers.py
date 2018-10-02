@@ -20,10 +20,9 @@
 import sys
 import subprocess
 
-from termcolor import colored
 from time import sleep
 
-from mlt.utils import files, process_helpers
+from mlt.utils import error_handling, files, process_helpers
 
 
 def call_logs(config, args):
@@ -63,13 +62,10 @@ def _get_logs(prefix, since, namespace):
             print(output)
         if error_msg:
             if 'command not found' in error_msg:
-                print(colored("Please install `{}`. "
-                              "It is a prerequisite "
-                              "for `mlt logs` to work"
-                              .format(error_msg.split()[1]), 'red'))
-            else:
-                print(colored(error_msg, 'red'))
-            sys.exit(1)
+                error_msg = "Please install `{}`.".format(
+                    error_msg.split()[1]) + \
+                    "It is a prerequisite for `mlt logs` to work"
+            error_handling.throw_error(error_msg, 'red')
     except KeyboardInterrupt:
         sys.exit()
 

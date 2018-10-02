@@ -19,12 +19,12 @@
 #
 
 import os
-import sys
 import random
 import string
 from subprocess import CalledProcessError
 from mlt.commands import Command
-from mlt.utils import (git_helpers, config_helpers, process_helpers)
+from mlt.utils import (git_helpers, config_helpers,
+                       error_handling, process_helpers)
 from mlt.utils import constants
 from distutils.dir_util import copy_tree
 
@@ -106,8 +106,7 @@ class UpdateTemplateCommand(Command):
                     error_string = "Automatic merge failed; " \
                                    "fix conflicts and then commit the result"
                     if error_string not in e.output:
-                        print(e.output)
-                        sys.exit(1)
+                        error_handling.throw_error(e.output)
                 # copy content of clone template dir back to app dir
                 copy_tree(clone_template_dir, application_dir)
                 print("Latest template changes have merged using git, "

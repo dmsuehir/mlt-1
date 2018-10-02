@@ -20,8 +20,7 @@
 
 import json
 import os
-import sys
-from mlt.utils import constants
+from mlt.utils import constants, error_handling
 
 
 def load_config():
@@ -30,9 +29,8 @@ def load_config():
         with open(constants.MLT_CONFIG) as f:
             return json.load(f)
     else:
-        print("This command requires you to be in an `mlt init` "
-              "built directory.")
-        sys.exit(1)
+        error_handling.throw_error("This command requires you to be in an "
+                                   "`mlt init` built directory.")
 
 
 def update_config(json_data):

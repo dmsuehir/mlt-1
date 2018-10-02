@@ -17,12 +17,10 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
-
-import sys
 from tabulate import tabulate
 
 from mlt.commands import Command
-from mlt.utils import config_helpers, constants
+from mlt.utils import config_helpers, constants, error_handling
 
 
 class TemplateConfigCommand(Command):
@@ -76,8 +74,7 @@ class TemplateConfigCommand(Command):
                 if add_if_not_found:
                     matched_config[n] = {}
                 else:
-                    print(key_not_found_error)
-                    sys.exit(1)
+                    error_handling.throw_error(key_not_found_error)
 
         return matched_config
 
@@ -112,6 +109,5 @@ class TemplateConfigCommand(Command):
         if param_keys[-1] in matched_config:
             del matched_config[param_keys[-1]]
         else:
-            print(key_not_found)
-            sys.exit(1)
+            error_handling.throw_error(key_not_found)
         config_helpers.update_config(self.config)

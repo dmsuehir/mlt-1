@@ -39,7 +39,17 @@ def checking_crds_mock(patch):
 
 @pytest.fixture
 def open_mock(patch):
-    return patch('open')
+    open_mock = MagicMock()
+    data = MagicMock()
+    data.readlines.return_value = """
+- name: $app
+#       ### BEGIN KSYNC SECTION
+#       command: ['/bin/sh']
+#       args: ['-c', 'python main.py; tail -f /dev/null']
+#       ### END KSYNC SECTION
+""".split('\n')
+    open_mock.return_value.__enter__.return_value = data
+    return patch('open', open_mock)
 
 
 @pytest.fixture
@@ -54,7 +64,8 @@ def os_path_isdir_mock(patch):
 
 @pytest.fixture
 def colored_mock(patch):
-    return patch('colored', MagicMock(side_effect=lambda x, _: x))
+    return patch('error_handling.colored', MagicMock(
+        side_effect=lambda x, _: x))
 
 
 @pytest.fixture
@@ -164,7 +175,7 @@ def test_init_dir_exists(open_mock, process_helpers, copytree_mock,
                     new_dir) + "before trying to initialize new " \
                                "application"
         else:
-            traceback_mock.print_exc.assert_called_once()
+            traceback_mock.format_exc.assert_called_once()
 
 
 def test_init(open_mock, process_helpers, copytree_mock, check_output_mock,

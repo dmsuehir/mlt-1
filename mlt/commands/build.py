@@ -18,15 +18,13 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 import json
-import sys
 import time
 import uuid
-from termcolor import colored
 from watchdog.observers import Observer
 
 from mlt.commands import Command
 from mlt.event_handler import EventHandler
-from mlt.utils import (config_helpers, files, progress_bar,
+from mlt.utils import (config_helpers, error_handling, files, progress_bar,
                        process_helpers, schema)
 
 
@@ -77,8 +75,7 @@ class BuildCommand(Command):
             if output:
                 print(output.decode("utf-8"))
             if error_msg:
-                print(colored(error_msg.decode("utf-8"), 'red'))
-                sys.exit(1)
+                error_handling.throw_error(error_msg.decode("utf-8"), 'red')
 
         built_time = time.time()
 

@@ -18,9 +18,9 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 import os
-import sys
 from contextlib import contextmanager
 from subprocess import check_output, CalledProcessError, Popen, PIPE
+from mlt.utils import error_handling
 
 
 def run(command, cwd=None, raise_on_failure=False):
@@ -29,8 +29,7 @@ def run(command, cwd=None, raise_on_failure=False):
     except CalledProcessError as e:
         if raise_on_failure:
             raise e
-        print(e.output)
-        sys.exit(1)
+        error_handling.throw_error(e.output)
 
     return output
 
@@ -43,14 +42,13 @@ def run_popen(command, shell=False, stdout=PIPE, stderr=PIPE, cwd=None,
         stdout = quiet if stdout is False else stdout
         stderr = quiet if stderr is False else stderr
         if not (isinstance(command, str) or isinstance(command, list)):
-            print("The following command is invalid:\n{}".format(command))
-            sys.exit(1)
+            error_handling.throw_error(
+                "The following command is invalid:\n{}".format(command))
         try:
             return Popen(command, stdout=stdout, stderr=stderr, shell=shell,
                          cwd=cwd, preexec_fn=preexec_fn)
         except CalledProcessError as e:
-            print(e.output)
-            sys.exit(1)
+            error_handling.throw_error(e.output)
 
 
 @contextmanager

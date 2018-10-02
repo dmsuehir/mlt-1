@@ -21,10 +21,9 @@
 import json
 import os
 import subprocess
-import sys
 
 from mlt.commands import Command
-from mlt.utils import (config_helpers, sync_helpers)
+from mlt.utils import (config_helpers, error_handling, sync_helpers)
 
 
 class SyncCommand(Command):
@@ -34,14 +33,12 @@ class SyncCommand(Command):
 
     def action(self):
         if not os.path.isfile('.stignore'):
-            print("This app is not initialized with '--enable-sync' "
-                  "option")
-            sys.exit(1)
+            error_handling.throw_error(
+                "This app is not initialized with '--enable-sync' option")
 
         push_file = '.push.json'
         if not os.path.isfile(push_file):
-            print("This app has not been deployed yet")
-            sys.exit(1)
+            error_handling.throw_error("This app has not been deployed yet")
 
         # Call the specified sub-command
         if self.args.get('create'):
@@ -57,8 +54,8 @@ class SyncCommand(Command):
             push_data = json.load(f)
 
         if sync_helpers.get_sync_spec() is not None:
-            print("Syncing spec has been already created for this app")
-            sys.exit(1)
+            error_handling.throw_error(
+                "Syncing spec has been already created for this app")
 
         app_run_id = push_data.get('app_run_id', "")
         job_name = '-'.join([self.config["name"], app_run_id])
@@ -86,8 +83,8 @@ class SyncCommand(Command):
     def _reload(self):
         sync_spec = sync_helpers.get_sync_spec()
         if sync_spec is None:
-            print("No syncing spec has been created for this app yet")
-            sys.exit(1)
+            error_handling.throw_error(
+                "No syncing spec has been created for this app yet")
 
         user_env = dict(os.environ, SYNC_SPEC=sync_spec)
 
@@ -112,8 +109,8 @@ class SyncCommand(Command):
     def _delete(self):
         sync_spec = sync_helpers.get_sync_spec()
         if sync_spec is None:
-            print("No syncing spec has been created for this app yet")
-            sys.exit(1)
+            error_handling.throw_error(
+                "No syncing spec has been created for this app yet")
 
         user_env = dict(os.environ, SYNC_SPEC=sync_spec)
 

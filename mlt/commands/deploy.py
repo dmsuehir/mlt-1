@@ -19,7 +19,6 @@
 #
 import json
 import os
-import sys
 import time
 import uuid
 import yaml
@@ -28,7 +27,7 @@ from subprocess import CalledProcessError, check_output, STDOUT
 from termcolor import colored
 
 from mlt.commands import Command
-from mlt.utils import (build_helpers, config_helpers, files,
+from mlt.utils import (build_helpers, config_helpers, error_handling, files,
                        kubernetes_helpers, progress_bar,
                        process_helpers, log_helpers, schema,
                        sync_helpers)
@@ -112,8 +111,7 @@ class DeployCommand(Command):
         if self.push_process.poll() != 0:
             push_stdout, push_error = self.push_process.communicate()
             print(push_stdout.decode("utf-8"))
-            print(colored(push_error.decode("utf-8"), 'red'))
-            sys.exit(1)
+            error_handling.throw_error(push_error.decode("utf-8"), 'red')
 
     def _tag(self):
         process_helpers.run(
