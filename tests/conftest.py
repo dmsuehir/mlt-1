@@ -25,6 +25,8 @@ import shutil
 import sys
 import tempfile
 from mock import MagicMock
+from subprocess import Popen
+from threading import Timer
 
 # enable test_utils to be used in tests via `from test_utils... import ...
 sys.path.append(os.path.join(os.path.dirname(__file__), 'test_utils'))
@@ -91,3 +93,74 @@ def pytest_sessionstart(session):
 
 def pytest_sessionfinish(session, exitstatus):
     shutil.rmtree(pytest.workdir)
+
+
+# SECTION TO GRAB MORE LOGS IF TEST FAILS
+
+# from https://docs.pytest.org/en/latest/example/simple.html
+#     #making-test-result-information-available-in-fixtures
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # execute all other hooks to obtain the report object
+    outcome = yield
+    rep = outcome.get_result()
+
+    # set a report attribute for each phase of a call, which can
+    # be "setup", "call", "teardown"
+
+    setattr(item, "rep_" + rep.when, rep)
+
+
+@pytest.fixture(autouse=True)
+def dump_extra_debug_info(request):
+    yield
+    # request.node is an "item" because we use the default
+    # "function" scope
+    if request.node.rep_setup.passed and request.node.rep_call.failed:
+        py_version = sys.version_info.major
+
+        # clone and build mlt at `master` if not done already
+        # if 2 threads execute this at once it'll be okay because `os.system`
+        # will error silently
+        mlt_path = '/tmp/mltAtMaster'
+        if not os.path.exists(mlt_path):
+            os.system(
+                """echo "Building MLT at master for debugging" &&
+                    git clone git@github.com:NervanaSystems/mlt.git \
+                      /tmp/mltAtMaster &&
+                   pushd /tmp/mltAtMaster &&
+                   PY={} make venv &&
+                   popd
+                """.format(py_version))
+        print('DEBUG INFO')
+
+        venv_name = '.venv' if py_version == 2 else '.venv3'
+        mlt_cmd = os.path.join(mlt_path, venv_name, 'bin', 'mlt')
+
+        def run_cmd(sub_cmd):
+            """Runs various mlt commands and dumps output"""
+            exec_cmd = "echo 'Running mlt {}...' && pushd {} > /dev/null" + \
+                " 2>&1 && {} {} && echo '' && popd > /dev/null 2>&1"
+            proc = Popen(exec_cmd.format(
+                sub_cmd, pytest.project_dir, mlt_cmd, sub_cmd),
+                stdout=True, stderr=True, shell=True)
+            # no cmd should take over 5 sec to run
+            # if logs does, kill after 5 sec as there's no logs then
+            timer = Timer(5, lambda x: x.kill(), [proc])
+            out = err = ''
+            try:
+                timer.start()
+                out, err = proc.communicate()
+            finally:
+                timer.cancel()
+
+            if out:
+                print(out)
+            if err:
+                print(err)
+
+        run_cmd("events")
+        run_cmd("logs")
+        run_cmd("status")
+
+# END SECTION TO GRAB MORE LOGS IF TEST FAILS

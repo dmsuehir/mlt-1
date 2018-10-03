@@ -66,7 +66,10 @@ class CommandTester(object):
         # useful debug print to id which test is running when
         print("Running test with namespace {}".format(self.namespace))
 
-        self.project_dir = os.path.join(pytest.workdir, self.app_name)
+        # project_dir will also be used to know where to run mlt debug cmds
+        # if a test fails
+        self.project_dir = pytest.project_dir = os.path.join(
+            pytest.workdir, self.app_name)
         self.mlt_json = os.path.join(self.project_dir, 'mlt.json')
         self.build_json = os.path.join(self.project_dir, '.build.json')
         self.deploy_json = os.path.join(self.project_dir, '.push.json')
