@@ -99,6 +99,7 @@ Options:
 # Note that new commands/flags should be documented in docs/features.md
 
 import os
+import sys
 from docopt import docopt
 
 import mlt
@@ -207,7 +208,15 @@ def load_config(args):
 
 
 def main():
-    args = load_config(sanitize_input(
-        docopt(__doc__, version="ML Container Templates Version {}".
-               format(mlt.__version__))))
-    run_command(args)
+    try:
+        args = load_config(sanitize_input(
+            docopt(__doc__, version="ML Container Templates Version {}".
+                   format(mlt.__version__))))
+        run_command(args)
+    # we want to allow SystemExit as we're intentionally catching those
+    # via the error_handling module
+    except Exception:
+        print("You've discovered a bug! Please make an issue on "
+              "https://github.com/IntelAI/mlt/issues if one does not "
+              "exist already.\nMLT command: {}\n".format(" ".join(sys.argv)))
+        raise

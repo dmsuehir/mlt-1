@@ -116,6 +116,11 @@ def dump_extra_debug_info(request):
     yield
     # request.node is an "item" because we use the default
     # "function" scope
+
+    # this functionality is only for e2e tests
+    if 'tests/e2e/' not in str(request.node.fspath):
+        return
+
     if request.node.rep_setup.passed and request.node.rep_call.failed:
         py_version = sys.version_info.major
 

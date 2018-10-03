@@ -24,6 +24,8 @@ from mock import MagicMock, patch
 
 from mlt.main import main, run_command
 
+from test_utils.io import catch_stdout
+
 """
 All these tests assert that given a command arg from docopt we call
 the right command
@@ -144,3 +146,15 @@ def test_main_load_args(docopt_mock, run_command_mock):
     # can't check `.items() <= .items()` here because of python2
     assert args["registry"] == "gcr.io/foobar", args["registry"]
     assert args["skip-crd-check"] is True, args["skip-crd-check"]
+
+
+def test_main_uncaught_exception(docopt_mock, run_command_mock):
+    """tests what happens when some part of the program fails"""
+    run_command_mock.side_effect = Exception
+    with catch_stdout() as output:
+        with pytest.raises(Exception):
+            main()
+        output = output.getvalue()
+        assert "You've discovered a bug! Please make an issue on " + \
+            "https://github.com/IntelAI/mlt/issues if one does not " + \
+            "exist already." in output, output
