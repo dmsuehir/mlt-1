@@ -37,10 +37,10 @@ class StatusCommand(Command):
             error_handling.throw_error("This app has not been deployed yet")
 
         namespace = self.config['namespace']
-        jobs = files.get_deployed_jobs()
+        jobs = files.get_deployed_jobs()[:self.args["<count>"]]
 
         # display status for only `--count` amount of jobs
-        for job in jobs[:self.args["<count>"]]:
+        for job in jobs:
             job_name = job.replace('k8s/', '')
             print('Job: {} -- Creation Time: {}'.format(
                 # replacing tzinfo with UTC to print `+0000` so users know
@@ -52,6 +52,9 @@ class StatusCommand(Command):
             self._display_status(job_name, namespace)
             # TODO: something more fancy to separate different statuses?
             print('')
+
+        if len(jobs) == 0:
+            print("No jobs are deployed.")
 
     def _display_status(self, job, namespace):
         """detects what kind of job was deployed and calls the correct

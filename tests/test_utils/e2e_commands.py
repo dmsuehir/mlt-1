@@ -300,7 +300,7 @@ class CommandTester(object):
             assert output.count('Job: ') == count, [output, self.project_dir]
             assert output.count('Creation Time: ') == count, output
         else:
-            assert output == ''
+            assert output == 'No jobs are deployed.', output
         return output
 
     def _log_helper(self, command):
