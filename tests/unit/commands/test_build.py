@@ -34,6 +34,11 @@ def init_mock(patch):
 
 
 @pytest.fixture
+def get_template_parameters_mock(patch):
+    return patch('config_helpers.get_template_parameters')
+
+
+@pytest.fixture
 def open_mock(patch):
     return patch('open')
 
@@ -138,3 +143,32 @@ def test_build_verbose(popen_mock, open_mock, init_mock):
     built = output.find('Built')
     assert all(var >= 0 for var in (starting, built))
     assert starting < built
+
+
+@pytest.mark.parametrize("template_parameters", [
+    {}, {'name': 'test'}])
+def test_build_get_template_parameters(progress_bar_mock,
+                                       popen_mock, prevent_deadlock_mock,
+                                       open_mock, init_mock,
+                                       template_parameters,
+                                       get_template_parameters_mock):
+    progress_bar_mock.duration_progress.side_effect = \
+        lambda x, y, z: print('Building')
+
+    build = BuildCommand({'build': True,
+                          '--watch': False,
+                          '--verbose': False})
+    build.config = MagicMock()
+
+    get_template_parameters_mock.return_value = template_parameters
+
+    with catch_stdout() as caught_output:
+        build.action()
+        output = caught_output.getvalue()
+
+    # assert that we started build, then did build process, then built
+    starting = output.find('Starting build')
+    building = output.find('Building')
+    built = output.find('Built')
+    assert all(var >= 0 for var in (starting, building, built))
+    assert starting < building < built

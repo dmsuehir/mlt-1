@@ -52,8 +52,13 @@ class BuildCommand(Command):
 
         template_parameters = config_helpers.\
             get_template_parameters(self.config)
-        build_cmd = "CONTAINER_NAME={} GPUS={} make build".format(
-            container_name, template_parameters.get('gpus', 0))
+
+        params = ""
+        for key, val in template_parameters.items():
+            params += "{}={} ".format(key.upper(), val)
+
+        build_cmd = "CONTAINER_NAME={} {}make build".format(
+            container_name, params)
 
         if self.args['--verbose']:
             build_process = process_helpers.run_popen(build_cmd,
