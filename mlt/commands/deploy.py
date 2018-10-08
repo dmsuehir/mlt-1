@@ -20,6 +20,7 @@
 import json
 import os
 import time
+import shutil
 import uuid
 import yaml
 from string import Template
@@ -144,6 +145,7 @@ class DeployCommand(Command):
         kubernetes_helpers.ensure_namespace_exists(self.namespace)
 
         app_run_id = str(uuid.uuid4())
+
         """
         we'll keep track of the number of containers that would be deployed
         so we know if we should exec into 1 or not (only auto-exec if 1 made)
@@ -189,6 +191,8 @@ class DeployCommand(Command):
            replaces things with $ with the vars from template.substitute
            also patches deployment if interactive mode is set
         """
+        # we'll make a subfolder of where this job will live
+        self.job_sub_dir = self._track_deployed_job(app_name, app_run_id)
         for path, dirs, filenames in os.walk("k8s-templates"):
             for filename in filenames:
                 with open(os.path.join(path, filename)) as f:
@@ -198,8 +202,9 @@ class DeployCommand(Command):
                     app=app_name, run=app_run_id, namespace=self.namespace,
                     **config_helpers.get_template_parameters(self.config))
 
-                # some templates are still in yaml form by the time they reach
-                # this point, so ignore a ValueError due to no json obj avail
+                # some templates are still in yaml form by the time
+                # they reach this point, so ignore a ValueError due to
+                # no json obj avail
                 try:
                     out = self._ensure_correct_data_types(json.loads(out))
                 except ValueError:
@@ -208,7 +213,7 @@ class DeployCommand(Command):
                 if self.args["--interactive"]:
                     # every pod will be made to `sleep infinity & wait`
                     out = self._patch_template_spec(out)
-                self._apply_template(out, filename, app_name, app_run_id)
+                self._apply_template(out, filename)
 
     def _ensure_correct_data_types(self, template_json):
         """Due to us editing the yaml now in init.py as well, we have some
@@ -244,19 +249,23 @@ class DeployCommand(Command):
         except CalledProcessError as e:
             print("Error while deploying app: {}".format(e.output))
 
-    def _apply_template(self, out, filename, app_name, app_run_id):
+    def _apply_template(self, out, filename):
         """take k8s-template data and create deployment in k8s dir
            job_sub_dir will be used in case of a mlt deploy -l to pass in the
            most current job being deployed to tail just in case there are > 1
            jobs that exist since mlt logs requires --job-name if > 1 job
         """
-        self.job_sub_dir = self._track_deployed_job(app_name, app_run_id)
         with open(os.path.join(self.job_sub_dir, filename), 'w') as f:
             f.write(out)
 
-        process_helpers.run(
-            ["kubectl", "--namespace", self.namespace,
-             "apply", "-R", "-f", self.job_sub_dir])
+        try:
+            process_helpers.run(
+                ["kubectl", "--namespace", self.namespace,
+                 "apply", "-R", "-f", self.job_sub_dir])
+        except SystemExit:
+            # if anything goes wrong with the deploy delete job subdir
+            shutil.rmtree(self.job_sub_dir)
+            raise
 
     def _track_deployed_job(self, app_name, app_run_id):
         """create a subdirectory in k8s with the deployed job name."""
