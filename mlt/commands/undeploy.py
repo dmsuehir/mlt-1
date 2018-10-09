@@ -95,21 +95,26 @@ class UndeployCommand(Command):
                 self.remove_job_dir(os.path.join('k8s', job))
         else:
             for job in jobs:
-                self._custom_undeploy(job)
+                self._custom_undeploy(job, namespace)
                 self.remove_job_dir(os.path.join('k8s', job))
 
     def remove_job_dir(self, job_dir):
         """remove the job sub-directory from k8s."""
         shutil.rmtree(job_dir)
 
-    def _custom_undeploy(self, job_name):
+    @staticmethod
+    def _custom_undeploy(job_name, namespace):
         """
         Custom undeploy uses the make targets to perform operation.
         """
         # Adding USER env because
         # https://github.com/ksonnet/ksonnet/issues/298
-        user_env = dict(os.environ, JOB_NAME=job_name, USER='root')
+        user_env = dict(os.environ,
+                        JOB_NAME=job_name,
+                        NAMESPACE=namespace,
+                        USER='root')
         try:
+
             output = subprocess.check_output(["make", "undeploy"],
                                              env=user_env,
                                              stderr=subprocess.STDOUT)

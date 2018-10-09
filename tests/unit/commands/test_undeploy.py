@@ -53,7 +53,7 @@ def proc_helpers(patch):
 
 @pytest.fixture
 def subprocess_mock(patch):
-    return patch('subprocess.check_output')
+    return patch('subprocess')
 
 
 @pytest.fixture
@@ -78,6 +78,11 @@ def remove_job_dir_mock(patch):
     return patch('UndeployCommand.remove_job_dir')
 
 
+@pytest.fixture
+def os_environ_mock(patch):
+    return patch('os.environ')
+
+
 def undeploy_fail(fail_text, command):
     """asserts we get some output along with a SystemExit"""
     with catch_stdout() as output:
@@ -95,7 +100,7 @@ def test_undeploy_custom(get_sync_spec_mock, is_custom_mock, open_mock,
     get_sync_spec_mock.return_value = None
     is_custom_mock.return_value = True
     os_path_exists_mock.return_value = True
-    subprocess_mock.return_value = b"Successful Custom Undeploy"
+    subprocess_mock.check_output.return_value = b"Successful Custom Undeploy"
     remove_job_dir_mock.input_value = 'k8s/job1'
     get_deployed_jobs_mock.return_value = ["job1"]
 
@@ -113,7 +118,6 @@ def test_undeploy_custom_no_app_deployed(open_mock, get_sync_spec_mock,
     os_path_exists_mock.return_value = False
     get_deployed_jobs_mock.return_value = {}
     command = {'undeploy': True}
-    subprocess_mock.return_value = b"Successful Custom Undeploy"
 
     undeploy_fail("This app has not been deployed yet.", command)
 
@@ -142,7 +146,7 @@ def test_undeploy_custom_by_job_name(
     """test `mlt undeploy --job-name` with custom undeploy."""
     get_sync_spec_mock.return_value = None
     is_custom_mock.return_value = True
-    subprocess_mock.return_value = b"Successful Custom Undeploy"
+    subprocess_mock.check_output.return_value = b"Successful Custom Undeploy"
     get_deployed_jobs_mock.return_value = ["job1", "job2"]
     os_path_exists_mock.return_value = True
     remove_job_dir_mock.input_value = 'k8s/job1'
@@ -158,7 +162,7 @@ def test_undeploy_custom_all(
     """test `mlt undeploy --all."""
     get_sync_spec_mock.return_value = None
     is_custom_mock.return_value = True
-    subprocess_mock.return_value = b"Successful Custom Undeploy"
+    subprocess_mock.check_output.return_value = b"Successful Custom Undeploy"
     get_deployed_jobs_mock.return_value = ["job1", "job2"]
     os_path_exists_mock.return_value = True
     remove_job_dir_mock.input_value = 'k8s/job1'
@@ -177,13 +181,17 @@ def test_undeploy(load_config_mock, proc_helpers, remove_job_dir_mock,
     proc_helpers.run.assert_called_once()
 
 
-def test_undeploy_custom_delete_job_dir(
-        open_mock, get_deployed_jobs_mock, get_sync_spec_mock,
-        is_custom_mock, subprocess_mock, os_path_exists_mock):
+def test_undeploy_custom_delete_job_dir(open_mock,
+                                        get_deployed_jobs_mock,
+                                        get_sync_spec_mock,
+                                        is_custom_mock,
+                                        subprocess_mock,
+                                        os_path_exists_mock):
     """test removing job dir while undeploying it."""
     get_sync_spec_mock.return_value = None
     is_custom_mock.return_value = True
-    subprocess_mock.return_value = b"No such file or directory: 'k8s/job1'"
+    subprocess_mock.check_output.\
+        return_value = b"No such file or directory: 'k8s/job1'"
     get_deployed_jobs_mock.return_value = ["job1"]
     os_path_exists_mock.return_value = True
     with catch_stdout() as output:
@@ -219,3 +227,18 @@ def test_undeploy_synced(error_handling_mock, get_sync_spec_mock):
     command = {'undeploy': True}
     undeploy_fail("This app is currently being synced, please run " +
                   "`mlt sync delete` to unsync first", command)
+
+
+def test_undeploy_custom_deploy_params_check(subprocess_mock,
+                                             os_environ_mock):
+    job_name = 'test-job-name'
+    namespace = 'test-namespace'
+    user_env = dict(os_environ_mock,
+                    JOB_NAME=job_name,
+                    NAMESPACE=namespace,
+                    USER='root')
+    UndeployCommand._custom_undeploy(job_name, namespace)
+    subprocess_mock.check_output.\
+        assert_called_with(["make", "undeploy"],
+                           env=user_env,
+                           stderr=subprocess_mock.STDOUT)
