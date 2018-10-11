@@ -71,8 +71,9 @@ class StatusCommand(Command):
         # if we have more than 1 k8 object created and types don't match
         # go with a custom job type since we won't know what kubectl call
         # to make to get status from everything
+        # also, if `status:` in Makefile we'll assume it's custom always
         job_types, all_same_job_type = files.get_job_kinds()
-        if job_types and not all_same_job_type:
+        if (job_types and not all_same_job_type) or files.is_custom('status:'):
             job_types = "custom"
         elif job_types:
             job_types = job_types.pop()

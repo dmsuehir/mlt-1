@@ -48,6 +48,11 @@ def get_job_kinds(patch):
 
 
 @pytest.fixture
+def is_custom_mock(patch):
+    return patch('files.is_custom', lambda x: True)
+
+
+@pytest.fixture
 def isfile_mock(patch):
     return patch('os.path.isfile')
 
@@ -174,6 +179,21 @@ def test_status_no_deploy(init_mock, open_mock, isfile_mock):
     output = status(catch_exception=SystemExit)
     expected_output = "This app has not been deployed yet"
     assert expected_output in output
+
+
+def test_status_custom_makefile(isfile_mock, init_mock, get_deployed_jobs,
+                                get_sync_spec_mock, getmtime_mock,
+                                get_job_kinds, subprocess_mock,
+                                is_custom_mock):
+    """
+    Tests a custom status if 'status:' is in Makefile
+    """
+    isfile_mock.return_value = True
+    custom_status = "Successful custom status"
+    subprocess_mock.return_value = bytearray(custom_status, 'utf-8')
+    output = status()
+    assert custom_status in output
+    assert subprocess_mock.is_called_once()
 
 
 def test_successful_status_no_sync(init_mock, open_mock, isfile_mock,
