@@ -19,7 +19,8 @@ jobs:
           # github changes their keys sometimes and we run into this issue:
           # https://circleci.com/gh/IntelAI/mlt/2365?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link
           # so this should fix that here
-          command: ssh-keyscan github.com >> ~/.ssh/known_hosts
+          command: |
+            ssh-keyscan -Ht rsa github.com >> ~/.ssh/known_hosts
 
       - run:
           name: Installing test/lint dependencies
