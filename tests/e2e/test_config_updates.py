@@ -52,7 +52,7 @@ class TestConfig(CommandTester):
         # list the configs again and compare to ensure the `name` was updated.
         updated_configs, _ = self.config(subcommand="list")
         assert updated_configs != original_configs
-        p = re.compile("name[\s]+{}".format(new_name))
+        p = re.compile(r"name[\s]+{}".format(new_name))
         assert p.search(str(updated_configs))
 
     def test_add_remove_config(self):
@@ -75,11 +75,11 @@ class TestConfig(CommandTester):
         # list the configs again to ensure that the new config is added.
         updated_configs, _ = self.config(subcommand="list")
         assert updated_configs != original_configs
-        p = re.compile("{}[\s]+{}".format(new_config, new_value))
+        p = re.compile(r"{}[\s]+{}".format(new_config, new_value))
         assert p.search(str(updated_configs))
 
         # remove the config and then ensure that the config has been removed.
         self.config(subcommand="remove", config_name=new_config)
         updated_configs, _ = self.config(subcommand="list")
-        p = re.compile("{}[\s]+{}".format(new_config, new_value))
+        p = re.compile(r"{}[\s]+{}".format(new_config, new_value))
         assert not p.search(str(updated_configs))

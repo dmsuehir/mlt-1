@@ -133,10 +133,10 @@ def test_undeploy_custom_multiple_jobs_deployed(
     command = {'undeploy': True}
     os_path_exists_mock.return_value = True
 
-    undeploy_fail("Multiple jobs are found under this application, " +
-                  "please try `mlt undeploy --all` or specify a single" +
-                  " job to undeploy using " +
-                  "`mlt undeploy --job-name <job-name>`", command)
+    undeploy_fail("Multiple jobs are found under this application, "
+                  + "please try `mlt undeploy --all` or specify a single"
+                  + " job to undeploy using "
+                  + "`mlt undeploy --job-name <job-name>`", command)
 
 
 def test_undeploy_custom_by_job_name(
@@ -225,8 +225,8 @@ def test_undeploy_synced(error_handling_mock, get_sync_spec_mock):
     """undeploying a synced job, we need to delete the sync first"""
     get_sync_spec_mock.return_value = 'hello-world'
     command = {'undeploy': True}
-    undeploy_fail("This app is currently being synced, please run " +
-                  "`mlt sync delete` to unsync first", command)
+    undeploy_fail("This app is currently being synced, please run "
+                  + "`mlt sync delete` to unsync first", command)
 
 
 def test_undeploy_custom_deploy_params_check(subprocess_mock,

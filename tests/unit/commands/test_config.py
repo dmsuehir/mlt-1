@@ -76,11 +76,11 @@ def test_list_config(init_mock):
     }
     output = config(list=True)
 
-    p = re.compile("namespace[\s]+foo")
+    p = re.compile(r"namespace[\s]+foo")
     assert p.search(output)
-    p = re.compile("registry[\s]+bar")
+    p = re.compile(r"registry[\s]+bar")
     assert p.search(output)
-    p = re.compile("{}.num_workers[\s]+2".format(
+    p = re.compile(r"{}.num_workers[\s]+2".format(
         constants.TEMPLATE_PARAMETERS))
     assert p.search(output)
 

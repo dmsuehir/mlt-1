@@ -61,7 +61,7 @@ setup(name='mlt',
                    'Operating System :: POSIX',
                    'Operating System :: MacOS :: MacOS X',
                    'Programming Language :: Python :: 3',
-                   'Topic :: Scientific/Engineering :: ' +
-                   'Artificial Intelligence',
+                   'Topic :: Scientific/Engineering :: '
+                   + 'Artificial Intelligence',
                    'Topic :: Scientific/Engineering :: Information Analysis',
                    'Topic :: System :: Distributed Computing'])

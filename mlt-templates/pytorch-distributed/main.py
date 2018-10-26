@@ -34,6 +34,7 @@ from torchvision import datasets, transforms
 
 class Partition(object):
     """ Dataset-like object, but only access a subset of it. """
+
     def __init__(self, data, index):
         self.data = data
         self.index = index
@@ -48,6 +49,7 @@ class Partition(object):
 
 class DataPartitioner(object):
     """ Partitions a dataset into different chuncks. """
+
     def __init__(self, data, sizes=[0.7, 0.2, 0.1], seed=1234):
         self.data = data
         self.partitions = []
@@ -67,6 +69,7 @@ class DataPartitioner(object):
 
 class Net(nn.Module):
     """ Network architecture. """
+
     def __init__(self):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(1, 10, kernel_size=5)

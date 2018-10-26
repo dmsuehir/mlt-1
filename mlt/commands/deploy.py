@@ -297,9 +297,8 @@ class DeployCommand(Command):
     def _get_pods_by_start_time(self):
         """helper func to return pods in current namespace by start time"""
         return process_helpers.run_popen(
-            "kubectl get pods --namespace {} ".format(
-                self.namespace) +
-            "--sort-by=.status.startTime", shell=True
+            "kubectl get pods --namespace {} ".format(self.namespace)
+            + "--sort-by=.status.startTime", shell=True
         ).stdout.read().decode('utf-8').strip().splitlines()
 
     def _patch_template_spec(self, data):
