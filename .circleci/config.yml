@@ -20,7 +20,14 @@ jobs:
           # https://circleci.com/gh/IntelAI/mlt/2365?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link
           # so this should fix that here
           command: |
+            mkdir -p ~/.ssh/
+            echo -e "Host github.com\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null\n" > ~/.ssh/config
+            chmod 600 ~/.ssh/config
             ssh-keyscan -Ht rsa github.com >> ~/.ssh/known_hosts
+
+      - add_ssh_keys:
+          fingerprints:
+            - "cb:4a:42:66:06:08:62:d2:40:18:01:56:af:47:e3:d0"
 
       - run:
           name: Installing test/lint dependencies
