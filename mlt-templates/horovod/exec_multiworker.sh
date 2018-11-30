@@ -32,4 +32,10 @@ python main.py \
 --data_path=${6} \
 --output_path=${7} \
 --no_horovod=${8} \
---learning_rate=${9}
+--learning_rate=${9} \
+--s3_endpoint=${10} \
+--s3_verify_ssl=${11} \
+--s3_use_https=${12} \
+--aws_access_key_id=${13} \
+--aws_secret_access_key=${14} \
+--aws_region=${15}

@@ -40,7 +40,8 @@ class TestTemplates(CommandTester):
 experiments          Runs hyperparameter experiments for a demo job.
 hello-world          A TensorFlow python HelloWorld example run through \
 Kubernetes Jobs.
-horovod              A distributed model training using horovod and openmpi.
+horovod              A distributed model training using horovod and openmpi \
+with added support for S3 storage.
 pytorch              Sample distributed application taken from \
 http://pytorch.org/tutorials/intermediate/dist_tuto.html
 pytorch-distributed  A distributed PyTorch MNIST example run using the \
@@ -86,7 +87,8 @@ through the TensorFlow Kubernetes Operator.
 experiments          Runs hyperparameter experiments for a demo job.
 hello-world          A TensorFlow python HelloWorld example run through \
 Kubernetes Jobs.
-horovod              A distributed model training using horovod and openmpi.
+horovod              A distributed model training using horovod and openmpi \
+with added support for S3 storage.
 pytorch              Sample distributed application taken from \
 http://pytorch.org/tutorials/intermediate/dist_tuto.html
 pytorch-distributed  A distributed PyTorch MNIST example run using the \

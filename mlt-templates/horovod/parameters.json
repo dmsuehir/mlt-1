@@ -8,12 +8,18 @@
     {"name": "total_steps", "value": "50"},
     {"name": "log_steps", "value": "20"},
     {"name": "batch_size", "value": "128"},
-    {"name": "data_path", "value": "/home/nfsshare/mnist"},
-    {"name": "output_path", "value": "/home/nfsshare/mnist/checkpoints"},
+    {"name": "data_path", "value": "null"},
+    {"name": "output_path", "value": "null"},
     {"name": "no_horovod", "value": "False"},
     {"name": "learning_rate", "value": "0.001"},
     {"name": "gpus", "value": "0"},
     {"name": "node_selector", "value": "node-type=highmem"},
-    {"name": "memory", "value": "null"}
+    {"name": "memory", "value": "null"},
+    {"name": "s3_endpoint", "value": "null"},
+    {"name": "aws_region", "value": "Local"},
+    {"name": "s3_verify_ssl", "value": "1"},
+    {"name": "s3_use_https", "value": "1"},
+    {"name": "aws_access_key_id", "value": "null"},
+    {"name": "aws_secret_access_key", "value": "null"}
   ]
 }

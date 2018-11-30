@@ -84,15 +84,27 @@ DATA_PATH=${DATA_PATH} # data path for training data
 OUTPUT_PATH=${OUTPUT_PATH} # output path to store results
 NO_HOROVOD=${NO_HOROVOD}
 LEARNING_RATE=${LEARNING_RATE}
-
 PPR=$(( $NUM_WORKERS_PER_NODE / $SOCKETS_PER_NODE ))
+
+# S3 storage support configuration
+S3_ENDPOINT=${S3_ENDPOINT}
+S3_VERIFY_SSL=${S3_VERIFY_SSL}
+S3_USE_HTTPS=${S3_USE_HTTPS}
+AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+AWS_REGION=${AWS_REGION}
 
 EXEC="mpirun -np ${WORKERS} \
 --hostfile /kubeflow/openmpi/assets/hostfile \
 --map-by socket \
 -cpus-per-proc ${PHYSICAL_CORES} \
 --report-bindings \
---oversubscribe bash /src/app/exec_multiworker.sh ${PPR} ${NUM_INTER_THREADS} ${TOTAL_STEPS} ${LOG_STEPS} ${BATCH_SIZE} ${DATA_PATH} ${OUTPUT_PATH} ${NO_HOROVOD} ${LEARNING_RATE}"
+--oversubscribe bash /src/app/exec_multiworker.sh \
+${PPR} ${NUM_INTER_THREADS} ${TOTAL_STEPS} ${LOG_STEPS} \
+${BATCH_SIZE} ${DATA_PATH} ${OUTPUT_PATH} ${NO_HOROVOD} \
+${LEARNING_RATE} ${S3_ENDPOINT} ${S3_VERIFY_SSL} \
+${S3_USE_HTTPS} ${AWS_ACCESS_KEY_ID} \
+${AWS_SECRET_ACCESS_KEY} ${AWS_REGION}"
 
 ks generate openmpi ${COMPONENT} \
 --image ${IMAGE} \
@@ -103,12 +115,23 @@ ks generate openmpi ${COMPONENT} \
 
 } &> /dev/null
 
-# Uncomment below params to mount data.
+# If you have data on your host and you want to mount that as volume, please update data_path and output_path in mlt.json
+# If you have data in a S3 object store, then set the s3_endpoint and other s3 values in mlt.json
 
-# If you have data on your host, if you want to mount that as volume. Please update below paths
+if [ -z "${S3_ENDPOINT}" ]
+    then
+    # Lets make sure that the user was not trying to use S3
+    # Check to see that the data path does not begine with s3:
+    if [[ "${DATA_PATH:0:5}" == "s3://" ]]
+        then
+        echo "data_path starts with S3 but S3_ENDPOINT has not been set"
+        exit
+    fi
+fi
+
 # volumes - path in this section will create a volume for you based on host path provided
 # volumeMounts - mountPath in this section will mount above volume at specified location
-if [ -n "${DATA_PATH}" ];
+if [ -n "${DATA_PATH}" ] && [ ! -n "${S3_ENDPOINT}" ];
     then
         ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "'"${DATA_PATH}"'"}}]'
         ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "'"${DATA_PATH}"'"}]'

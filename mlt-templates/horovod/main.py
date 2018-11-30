@@ -45,10 +45,10 @@ tf.app.flags.DEFINE_integer("batch_size", 128,
                             "Batch Size for Training")
 
 tf.app.flags.DEFINE_string("data_path",
-                           '/home/nfsshare/mnist',
+                           '',
                            "Data directory")
 
-tf.app.flags.DEFINE_string("output_path", '/home/nfsshare/mnist/checkpoints',
+tf.app.flags.DEFINE_string("output_path", '',
                            "Output log directory")
 
 tf.app.flags.DEFINE_boolean("no_horovod", False,
@@ -57,10 +57,37 @@ tf.app.flags.DEFINE_boolean("no_horovod", False,
 tf.app.flags.DEFINE_float("learning_rate", 0.001,
                           "Learning rate")
 
+tf.app.flags.DEFINE_string("s3_endpoint", '',
+                           "Endpoint for S3 storage, blank means no S3")
+
+tf.app.flags.DEFINE_string("aws_region", 'Local',
+                           "Region for AWS S3")
+
+tf.app.flags.DEFINE_string("s3_use_https", '1',
+                           "HTTPS is used to access S3 by default")
+
+tf.app.flags.DEFINE_string("s3_verify_ssl", '1',
+                           "HTTPS is used for S3 by default")
+
+tf.app.flags.DEFINE_string("aws_access_key_id", '',
+                           "S3 storage credentials")
+
+tf.app.flags.DEFINE_string("aws_secret_access_key", '',
+                           "S3 storage credentials")
+
 config = tf.ConfigProto(intra_op_parallelism_threads=FLAGS.num_threads,
                         inter_op_parallelism_threads=FLAGS.num_inter_threads)
 
 tf.logging.set_verbosity(tf.logging.INFO)
+
+if FLAGS.s3_endpoint:
+    # Set S3 Environment Variables
+    os.environ["S3_ENDPOINT"] = FLAGS.s3_endpoint
+    os.environ["S3_VERIFY_SSL"] = FLAGS.s3_verify_ssl
+    os.environ["S3_USE_HTTPS"] = FLAGS.s3_use_https
+    os.environ["AWS_ACCESS_KEY_ID"] = FLAGS.aws_access_key_id
+    os.environ["AWS_SECRET_ACCESS_KEY"] = FLAGS.aws_secret_access_key
+    os.environ["AWS_REGION"] = FLAGS.aws_region
 
 if not FLAGS.no_horovod:
     import horovod.tensorflow as hvd
