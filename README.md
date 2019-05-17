@@ -1,3 +1,15 @@
+<div>
+<h1>
+<img src="docs/warning.png"/>
+Deprecation notice
+</h1>
+
+Intel is winding down development and maintenance of MLT.
+
+Please see [Nauta](www.intel.ai/nauta), [Deep Learning Reference Stack](https://clearlinux.org/stacks/deep-learning-reference-stack) or [Kubeflow](www.kubeflow.org) for coverage of end to end data science workflows.
+</div>
+
+
 # mlt
 Machine Learning Container Templates
 
