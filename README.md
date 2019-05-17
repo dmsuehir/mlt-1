@@ -6,7 +6,7 @@ Deprecation notice
 
 Intel is winding down development and maintenance of MLT.
 
-Please see [Nauta](www.intel.ai/nauta), [Deep Learning Reference Stack](https://clearlinux.org/stacks/deep-learning-reference-stack) or [Kubeflow](www.kubeflow.org) for coverage of end to end data science workflows.
+Please see [Nauta](https://www.intel.ai/nauta), [Deep Learning Reference Stack](https://clearlinux.org/stacks/deep-learning-reference-stack) or [Kubeflow](https://www.kubeflow.org) for coverage of end to end data science workflows.
 </div>
 
 
